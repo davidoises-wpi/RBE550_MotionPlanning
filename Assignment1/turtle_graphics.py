@@ -7,7 +7,7 @@ def main():
     turtle_searcher = turtle.Turtle()
 
     # How much the initial angle changes on each search loop
-    angle_step = 10
+    angle_step = 0
 
     for i in range(0,3):
         base_angle = i*angle_step
@@ -22,7 +22,7 @@ def search_iteration(t, base_angle):
 
     # Calculations for angles are done so that the "angle" variable holds the 
     # absolute angle in relation to the x axis (absolute 0)
-    
+
     # First triangle
     prev_angle = base_angle
     angle = 90
@@ -73,6 +73,8 @@ def search_iteration(t, base_angle):
     angle += base_angle
     t.left(angle - prev_angle)
     t.forward(100)
+
+    t.setheading(0)
 
 if __name__ == "__main__":
     main()
