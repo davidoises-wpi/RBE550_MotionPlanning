@@ -1,5 +1,6 @@
 from random import random
 from obstacles import Obstacle
+from math import sqrt
 
 SCREEN_WIDTH_PIXELS = 750
 SCREEN_HEIGHT_PIXELS = SCREEN_WIDTH_PIXELS
@@ -11,6 +12,7 @@ METERS_TO_PIXELS = SCREEN_HEIGHT_PIXELS/SCREEN_WIDTH_METERS
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+GREY = (10, 10, 10)
 
 world_limit_top = Obstacle((SCREEN_WIDTH_PIXELS/2, -1), SCREEN_WIDTH_PIXELS, 2, GREEN)
 world_limit_bot = Obstacle((SCREEN_WIDTH_PIXELS/2, SCREEN_HEIGHT_PIXELS+1), SCREEN_WIDTH_PIXELS, 2, GREEN)
@@ -23,14 +25,22 @@ world_limits.append(world_limit_bot)
 world_limits.append(world_limit_left)
 world_limits.append(world_limit_right)
 
+bushes = []
+
 class Bush():
     BLOCK_WIDTH = 5*METERS_TO_PIXELS
     BLOCK_HEIGHT = 5*METERS_TO_PIXELS
     BURNING_LIMIT = 100
 
+    BURNING_STATE = 0
+    BURNED_STATE = 1
+    EXTINGUISHED_STATE = 2
+    NORMAL_STATE = 3
+
     def __init__(self, x, y, type) -> None:
         self.blocks = []
         self.burning_level = 0
+        self.state = self.NORMAL_STATE
         if type == 0:
             self.blocks.append(Obstacle((x, y-(self.BLOCK_HEIGHT*2)), self.BLOCK_WIDTH, self.BLOCK_HEIGHT, GREEN))
             self.blocks.append(Obstacle((x, y-(self.BLOCK_HEIGHT*1)), self.BLOCK_WIDTH, self.BLOCK_HEIGHT, GREEN))
@@ -54,6 +64,12 @@ class Bush():
 
     def render(self, parent_surface):
         for block in self.blocks:
+            if self.state == self.BURNED_STATE:
+                block.color = GREY
+            elif self.state == self.BURNING_STATE:
+                block.color = RED
+            else:
+                block.color = GREEN
             block.render(parent_surface)
 
     def check_collisions(self, obstacles):
@@ -67,7 +83,6 @@ class Bush():
 def  populate_map(density):
 
     obstacle_list = []
-    bush_list = []
 
     number_of_obstacles = density*SCREEN_WIDTH_PIXELS*SCREEN_HEIGHT_PIXELS/(Bush.BLOCK_WIDTH*Bush.BLOCK_HEIGHT*4)
     number_of_obstacles = round(number_of_obstacles)
@@ -87,6 +102,28 @@ def  populate_map(density):
 
     for obstacle in obstacle_list:
         bush_type = round(random()*3.5)
-        bush_list.append(Bush(obstacle.x, obstacle.y, bush_type))
+        bushes.append(Bush(obstacle.x, obstacle.y, bush_type))
 
-    return bush_list
+def update_environment(firetruck, wumpus):
+    for bush in bushes:
+        touched = False
+        for block in bush.blocks:
+            x_diff = block.x - wumpus.x
+            y_diff = block.y - wumpus.y
+
+            dist = sqrt(x_diff**2 + y_diff**2)
+            dist = dist / METERS_TO_PIXELS
+            if dist <= 2.0:
+                touched = True
+                break
+
+        if touched:
+            if bush.state == Bush.NORMAL_STATE or bush.state == Bush.EXTINGUISHED_STATE:
+                bush.state = Bush.BURNING_STATE
+
+        if bush.state == Bush.BURNING_STATE:
+            if bush.burning_level >= Bush.BURNING_LIMIT:
+                bush.state = Bush.BURNED_STATE
+            else:
+                bush.burning_level += 1
+                # Expand fire to 30meters in 10 seconds

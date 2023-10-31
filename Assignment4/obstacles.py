@@ -18,6 +18,7 @@ class Obstacle():
         self.mask = pygame.mask.from_surface(self.surface)
 
     def render(self, parent_surface):
+        self.surface.fill(self.color)
         parent_surface.blit(self.surface, self.rect)
 
     def check_collision(self, obstacles, check_mask):
