@@ -9,7 +9,13 @@ from math import cos, sin, radians, degrees
 
 FPS = 60
 
-def render_all(window, clock, vehicle, bushes):
+# TOTAL_REAL_TIME_SEC = 3600
+TOTAL_REAL_TIME_SEC = 10
+# TOTAL_REAL_TIME_SEC = 120
+TOTAL_SIMULATION_TIME_SEC = 3600
+REAL_TO_SIMULATION_SECS_PER_MILLIS = TOTAL_SIMULATION_TIME_SEC/(TOTAL_REAL_TIME_SEC*1000.0)
+
+def render_all(window, clock, vehicle, bushes, time):
     window.fill(environment.WHITE)
 
     for bush in bushes:
@@ -19,6 +25,13 @@ def render_all(window, clock, vehicle, bushes):
     # vehicle.set_orientation(degrees(point[2]))
     vehicle.update()
     vehicle.render(window)
+
+    font = pygame.font.Font('freesansbold.ttf', 32)
+    text = font.render(str(time),True, (0,0,0),None)
+    text_rect = text.get_rect()
+    text_rect.topright = (environment.SCREEN_WIDTH_PIXELS, 0)
+
+    window.blit(text, text_rect)
 
     pygame.display.update()
 
@@ -46,7 +59,9 @@ def main():
     wumpus = Wumpus(100,100)
 
     environment.populate_map(0.1)
-    print(len(environment.bushes))
+    # print(len(environment.bushes))
+
+    start_time_real = pygame.time.get_ticks()
 
     """ Main loop with search and visualization """
     run = True
@@ -94,9 +109,23 @@ def main():
                 car_angle_step *= -1
             car.set_orientation(car.orientation + car_angle_step)
 
-        environment.update_environment(None, wumpus)
+        elapsed_time_real = pygame.time.get_ticks() - start_time_real
+        elapsed_time_simulation = elapsed_time_real*REAL_TO_SIMULATION_SECS_PER_MILLIS
 
-        render_all(screen, clock, car, environment.bushes)
+        environment.update_environment(None, wumpus, elapsed_time_simulation)
+
+        render_all(screen, clock, car, environment.bushes, round(elapsed_time_simulation))
+
+        if elapsed_time_simulation >= 3600.0:
+            run = False
+
+    run = True
+    while run:
+        # Handle user events
+        for event in pygame.event.get():
+            # User clicked on close button
+            if event.type == pygame.QUIT:
+                run = False
 
     # Finish execution
     pygame.quit()

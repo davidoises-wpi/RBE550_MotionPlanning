@@ -104,7 +104,7 @@ def  populate_map(density):
         bush_type = round(random()*3.5)
         bushes.append(Bush(obstacle.x, obstacle.y, bush_type))
 
-def update_environment(firetruck, wumpus):
+def update_environment(firetruck, wumpus, time):
     for bush in bushes:
         touched = False
         for block in bush.blocks:
