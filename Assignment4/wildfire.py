@@ -9,12 +9,6 @@ from math import cos, sin, radians, degrees
 
 FPS = 60
 
-# TOTAL_REAL_TIME_SEC = 3600
-TOTAL_REAL_TIME_SEC = 10
-# TOTAL_REAL_TIME_SEC = 120
-TOTAL_SIMULATION_TIME_SEC = 3600
-REAL_TO_SIMULATION_SECS_PER_MILLIS = TOTAL_SIMULATION_TIME_SEC/(TOTAL_REAL_TIME_SEC*1000.0)
-
 def render_all(window, clock, vehicle, bushes, time):
     window.fill(environment.WHITE)
 
@@ -110,7 +104,7 @@ def main():
             car.set_orientation(car.orientation + car_angle_step)
 
         elapsed_time_real = pygame.time.get_ticks() - start_time_real
-        elapsed_time_simulation = elapsed_time_real*REAL_TO_SIMULATION_SECS_PER_MILLIS
+        elapsed_time_simulation = elapsed_time_real*environment.REAL_TO_SIMULATION_SECS_PER_MILLIS
 
         environment.update_environment(None, wumpus, elapsed_time_simulation)
 
