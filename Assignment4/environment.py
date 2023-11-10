@@ -35,10 +35,6 @@ world_limits.append(world_limit_right)
 
 bushes = []
 
-# TODO define as states
-wumpus_start = None
-wumpus_goal = None
-
 class Bush():
     BLOCK_WIDTH = 5*METERS_TO_PIXELS
     BLOCK_HEIGHT = 5*METERS_TO_PIXELS

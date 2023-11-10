@@ -3,8 +3,7 @@ import sys
 import pygame
 import environment
 from vehicles import SimpleVehicleSprite
-from wumpus import Wumpus
-from wumpus import wumpus_main, get_wumpus_path, is_wumpus_path_ready
+from wumpus import wumpus_main, get_wumpus_path, is_wumpus_path_ready, initialize_wumpus_initial_state
 import threading
 
 from math import cos, sin, radians, degrees
@@ -52,12 +51,14 @@ def main():
     clock = pygame.time.Clock()
 
     car = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100))
+
+    # Wumpus initialization
     # wumpus_size = (2*environment.METERS_TO_PIXELS, 2*environment.METERS_TO_PIXELS)
     wumpus_size = (10*environment.METERS_TO_PIXELS, 10*environment.METERS_TO_PIXELS)
-    wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (100, 100), wumpus_size)
+    wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (0, 0), wumpus_size)
+    initialize_wumpus_initial_state(wumpus)
 
     environment.populate_map(0.1)
-    # print(len(environment.bushes))
 
     wumpus_search_thread = threading.Thread(target=wumpus_main, args=(wumpus,))
     wumpus_search_thread.daemon = True
