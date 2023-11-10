@@ -4,10 +4,17 @@ import pygame
 import environment
 from vehicles import SimpleVehicleSprite
 from wumpus import Wumpus
+import multiprocessing
 
 from math import cos, sin, radians, degrees
 
 FPS = 60
+
+def wumpus_main():
+    while True:
+        for i in range(1000):
+            pass
+        print("Wumpusing")
 
 def render_all(window, clock, vehicle, bushes, time):
     window.fill(environment.WHITE)
@@ -54,6 +61,9 @@ def main():
 
     environment.populate_map(0.1)
     # print(len(environment.bushes))
+
+    wumpus_search_thread = multiprocessing.Process(target=wumpus_main)
+    wumpus_search_thread.start()
 
     start_time_real = pygame.time.get_ticks()
 
@@ -123,6 +133,8 @@ def main():
 
     # Finish execution
     pygame.quit()
+
+    wumpus_search_thread.terminate()
 
 if __name__ == "__main__":
     main()
