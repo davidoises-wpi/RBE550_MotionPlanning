@@ -4,28 +4,24 @@ import pygame
 import environment
 from vehicles import SimpleVehicleSprite
 from wumpus import Wumpus
-import multiprocessing
+from wumpus import wumpus_main, get_wumpus_path, is_wumpus_path_ready
+import threading
 
 from math import cos, sin, radians, degrees
 
 FPS = 60
 
-def wumpus_main():
-    while True:
-        for i in range(1000):
-            pass
-        print("Wumpusing")
-
-def render_all(window, clock, vehicle, bushes, time):
+def render_all(window, clock, vehicles, bushes, time):
     window.fill(environment.WHITE)
 
     for bush in bushes:
         bush.render(window)
 
-    # vehicle.set_position(point[0], point[1])
-    # vehicle.set_orientation(degrees(point[2]))
-    vehicle.update()
-    vehicle.render(window)
+    for vehicle in vehicles:
+        # vehicle.set_position(point[0], point[1])
+        # vehicle.set_orientation(degrees(point[2]))
+        vehicle.update()
+        vehicle.render(window)
 
     font = pygame.font.Font('freesansbold.ttf', 32)
     text = font.render(str(time),True, (0,0,0),None)
@@ -56,13 +52,15 @@ def main():
     clock = pygame.time.Clock()
 
     car = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100))
-
-    wumpus = Wumpus(100,100)
+    # wumpus_size = (2*environment.METERS_TO_PIXELS, 2*environment.METERS_TO_PIXELS)
+    wumpus_size = (10*environment.METERS_TO_PIXELS, 10*environment.METERS_TO_PIXELS)
+    wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (100, 100), wumpus_size)
 
     environment.populate_map(0.1)
     # print(len(environment.bushes))
 
-    wumpus_search_thread = multiprocessing.Process(target=wumpus_main)
+    wumpus_search_thread = threading.Thread(target=wumpus_main, args=(wumpus,))
+    wumpus_search_thread.daemon = True
     wumpus_search_thread.start()
 
     start_time_real = pygame.time.get_ticks()
@@ -106,7 +104,6 @@ def main():
                 car_x_step *= -1
                 car_y_step *= -1
             car.set_position(car.x + car_x_step, car.y + car_y_step)
-            wumpus.set_location(car.x, car.y)
 
         if rotate_left or rotate_right:
             if rotate_right:
@@ -118,7 +115,13 @@ def main():
 
         environment.update_environment(None, wumpus, elapsed_time_simulation)
 
-        render_all(screen, clock, car, environment.bushes, round(elapsed_time_simulation))
+        # Call Planning stuff here, why not
+        if is_wumpus_path_ready():
+            print("ready")
+            path = get_wumpus_path()
+            print(path)
+
+        render_all(screen, clock, [wumpus, car], environment.bushes, round(elapsed_time_simulation))
 
         if elapsed_time_simulation >= 3600.0:
             run = False
@@ -133,8 +136,6 @@ def main():
 
     # Finish execution
     pygame.quit()
-
-    wumpus_search_thread.terminate()
 
 if __name__ == "__main__":
     main()

@@ -2,7 +2,7 @@ import pygame
 from math import cos, sin, radians
 
 class SimpleVehicleSprite():
-    def __init__(self, img_file, orientation_offset, initial_pos):
+    def __init__(self, img_file, orientation_offset, initial_pos, scaling=None):
         self.orientation_offset = orientation_offset
         self.orientation = 0
 
@@ -10,6 +10,8 @@ class SimpleVehicleSprite():
         self.y = initial_pos[1]
 
         self.image = pygame.image.load(img_file).convert_alpha()
+        if scaling:
+            self.image = pygame.transform.scale(self.image, scaling)
         self.surface = pygame.transform.rotate(self.image, self.orientation_offset)
         self.rect = self.surface.get_rect()
         self.mask = pygame.mask.from_surface(self.surface)

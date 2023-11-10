@@ -35,6 +35,10 @@ world_limits.append(world_limit_right)
 
 bushes = []
 
+# TODO define as states
+wumpus_start = None
+wumpus_goal = None
+
 class Bush():
     BLOCK_WIDTH = 5*METERS_TO_PIXELS
     BLOCK_HEIGHT = 5*METERS_TO_PIXELS
@@ -137,18 +141,7 @@ def  populate_map(density):
 
 def update_environment(firetruck, wumpus, time):
     for bush in bushes:
-        # TODO: collision checking is the ideal but first we need a wumpus class that can do that
-        # touched = bush.check_collisions([wumpus])
-        touched = False
-        for block in bush.blocks:
-            x_diff = block.x - wumpus.x
-            y_diff = block.y - wumpus.y
-
-            dist = sqrt(x_diff**2 + y_diff**2)
-            dist = dist / METERS_TO_PIXELS
-            if dist <= 2.0:
-                touched = True
-                break
+        touched = bush.check_collisions([wumpus])
 
         # Bush is touched if another bush had already set its flag or if wumpus was too close
         bush.touched = bush.touched or touched
