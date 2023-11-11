@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from math import tan, cos, sin, pi, radians, degrees, sqrt
+import environment
 
 class State(ABC):
 
@@ -158,10 +159,6 @@ class DotDriveState(State):
         super().__init__(x, y, 0)
         self.dxy = dxy
 
-    def get_steps(dx, dy):
-        """ This function returns the steps after integrating the kinematic model over dt """
-        return dx, dy
-
     def get_neighbors(self, vehicle, obstacles, open_states, closed_states, goal_state, xlimit, ylimit):
         """ This function expands the reachable states from the current state given the kinematic constraints
             and calculates the cost to reach the new states using the path cost and a heuristic cost
@@ -172,8 +169,6 @@ class DotDriveState(State):
             for dy in [-self.dxy, 0, self.dxy]:
                 if dx == 0 and dy == 0:
                     continue
-
-                dx, dy = self.get_steps()
 
                 x = round(self.x + dx)
                 y = round(self.y + dy)
@@ -193,7 +188,12 @@ class DotDriveState(State):
                         vehicle.set_position(x, y)
                         vehicle.set_orientation(degrees(0))
                         vehicle.update()
-                        colided = vehicle.check_collision(obstacles)
+                        for obstacle in obstacles:
+                            # TODO find a way to check coliisions while multithreading
+                            colided = obstacle.check_collisions([vehicle])
+                            if colided:
+                                break
+                        # colided = vehicle.check_collision(obstacles)
                         if not colided:
 
                             # Calculate the new costs
@@ -235,8 +235,7 @@ class DotDriveState(State):
         """ Checks if the current state is whithin acceptable tolerance from the goal """
         dist = self.calculate_euclidean_distance(other_state)
 
-        # TODO decide what number to put here
-        return dist < 10
+        return dist < 5*environment.METERS_TO_PIXELS
 
     def __str__(self):
         return f"x: {self.x} y: {self.y} cost: {self.cost}"
