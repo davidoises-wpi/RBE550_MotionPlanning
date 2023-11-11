@@ -2,6 +2,7 @@ import environment
 from states import DotDriveState
 import time
 from math import radians
+from random import random
 
 wumpus_path = []
 wumpus_path_ready = False
@@ -13,8 +14,11 @@ wumpus_goal_state = None
 def initialize_wumpus_initial_state(wumpus):
     global wumpus_initial_state
 
-    wumpus_initial_state = DotDriveState(100, 0, radians(0), 0, 0, 0)
-    wumpus.set_position(100, 300)
+    posx = round(random()*environment.SCREEN_WIDTH_PIXELS)
+    posy = round(random()*environment.SCREEN_HEIGHT_PIXELS)
+
+    wumpus_initial_state = DotDriveState(posx, posy, 5*environment.METERS_TO_PIXELS)
+    wumpus.set_position(posx, posy)
 
 def initialize_wumpus_goal_state():
     pass

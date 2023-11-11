@@ -152,6 +152,95 @@ class AckermannDriveState(State):
     def __str__(self):
         return f"x: {self.x} y: {self.y} angle: {degrees(self.angle)} psi: {degrees(self.psi)} v: {self.v} cost: {self.cost}"
 
+class DotDriveState(State):
+
+    def __init__(self, x, y, dxy):
+        super().__init__(x, y, 0)
+        self.dxy = dxy
+
+    def get_steps(dx, dy):
+        """ This function returns the steps after integrating the kinematic model over dt """
+        return dx, dy
+
+    def get_neighbors(self, vehicle, obstacles, open_states, closed_states, goal_state, xlimit, ylimit):
+        """ This function expands the reachable states from the current state given the kinematic constraints
+            and calculates the cost to reach the new states using the path cost and a heuristic cost
+        """
+        neighbors = []
+
+        for dx in [-self.dxy, 0, self.dxy]:
+            for dy in [-self.dxy, 0, self.dxy]:
+                if dx == 0 and dy == 0:
+                    continue
+
+                dx, dy = self.get_steps()
+
+                x = round(self.x + dx)
+                y = round(self.y + dy)
+
+                original_x = vehicle.x
+                original_y = vehicle.y
+                original_angle = vehicle.orientation
+
+                # 1. Check if its withing map limits
+                if x >= xlimit[0] and x <= xlimit[1] and y >= ylimit[0] and y <= ylimit[1]:
+
+                    # 2. Check if the state hasnt been explored yet
+                    new_state = DotDriveState(x, y, self.dxy)
+                    if new_state not in closed_states:
+
+                        # 3. Check if the new state is in collision
+                        vehicle.set_position(x, y)
+                        vehicle.set_orientation(degrees(0))
+                        vehicle.update()
+                        colided = vehicle.check_collision(obstacles)
+                        if not colided:
+
+                            # Calculate the new costs
+                            tentative_new_cost = self.cost + self.calculate_euclidean_distance(new_state)
+                            heuristic_cost = new_state.calculate_heuristic_cost(self, goal_state)
+
+                            # Update the state in the open list if it exists
+                            try:
+                                index = open_states.index(new_state)
+                                previous_cost = open_states[index].cost
+                                if tentative_new_cost < previous_cost:
+                                    open_states[index] = new_state
+                                    open_states[index].cost = tentative_new_cost
+                                    open_states[index].total_cost = tentative_new_cost + heuristic_cost
+                                    open_states[index].parent_state = self
+                            except ValueError:
+                                # return a new element in the neighbors list if this hadnt been discovered
+                                new_state.parent_state = self
+                                new_state.cost = tentative_new_cost
+                                new_state.total_cost = tentative_new_cost + heuristic_cost
+                                neighbors.append(new_state)
+                        vehicle.set_position(original_x, original_y)
+                        vehicle.set_orientation(original_angle)
+                        vehicle.update()
+
+        return neighbors
+
+    def calculate_heuristic_cost(self, prev_state, goal_state):
+        """ Heuristic cost calculation penalizing:
+        euclidean distance from goal
+        """
+
+        distance_multiplier = 1
+        dist = self.calculate_euclidean_distance(goal_state)
+
+        return distance_multiplier*dist
+
+    def goal_check(self, other_state):
+        """ Checks if the current state is whithin acceptable tolerance from the goal """
+        dist = self.calculate_euclidean_distance(other_state)
+
+        # TODO decide what number to put here
+        return dist < 10
+
+    def __str__(self):
+        return f"x: {self.x} y: {self.y} cost: {self.cost}"
+
 
 class DifferemtialDriveState(State):
 
