@@ -116,11 +116,11 @@ def main():
 
         environment.update_environment(None, wumpus, elapsed_time_simulation)
 
-        # Call Planning stuff here, why not
-        if is_wumpus_path_ready():
-            print("ready")
-            path = get_wumpus_path()
-            print(path)
+        # This is just to render the path
+        # if is_wumpus_path_ready():
+        #     print("ready")
+        #     path = get_wumpus_path()
+        #     print(path)
 
         render_all(screen, clock, [wumpus, car], environment.bushes, round(elapsed_time_simulation))
 
