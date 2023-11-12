@@ -191,7 +191,6 @@ class DotDriveState(State):
                         temp_vehicle.set_orientation(degrees(0))
                         temp_vehicle.update()
                         for obstacle in obstacles:
-                            # TODO find a way to check coliisions while multithreading
                             colided = obstacle.check_collisions([temp_vehicle])
                             if colided:
                                 break

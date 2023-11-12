@@ -10,7 +10,7 @@ from math import cos, sin, radians, degrees
 
 FPS = 60
 
-def render_all(window, clock, vehicles, bushes, wumpus_explored_states, time):
+def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_path, time):
     window.fill(environment.WHITE)
 
     for bush in bushes:
@@ -18,6 +18,10 @@ def render_all(window, clock, vehicles, bushes, wumpus_explored_states, time):
 
     for state in wumpus_explored_states:
         window.fill((0, 0, 0), ((state.x, state.y), (2, 2)))
+
+    # if wumpus_path:
+    for point in wumpus_path:
+        window.fill((255, 0, 0), ((point.x,point.y), (2, 2)))
 
     for vehicle in vehicles:
         # vehicle.set_position(point[0], point[1])
@@ -120,13 +124,12 @@ def main():
         environment.update_environment(None, wumpus, elapsed_time_simulation)
 
         # This is just to render the path
-        # if is_wumpus_path_ready():
-        #     print("ready")
-        #     path = get_wumpus_path()
-        #     print(path)
+        wumpus_path = []
+        if is_wumpus_path_ready():
+            wumpus_path = get_wumpus_path()
         wumpus_states = get_wumpus_explored_states()
 
-        render_all(screen, clock, [wumpus, car], environment.bushes, wumpus_states, round(elapsed_time_simulation))
+        render_all(screen, clock, [wumpus, car], environment.bushes, wumpus_states, wumpus_path, round(elapsed_time_simulation))
 
         if elapsed_time_simulation >= 3600.0:
             run = False

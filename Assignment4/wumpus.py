@@ -6,13 +6,17 @@ from random import random
 
 WUMPUS_STEP_PER_CYCLE = 5*environment.METERS_TO_PIXELS
 
+stop_playing = False
 wumpus_ready_for_planning = False
 wumpus_initial_state = None
 wumpus_goal_state = None
+goal_bush = None
 
 wumpus_explored_states = []
 wumpus_path = []
 wumpus_path_ready = False
+
+wumpus_path_state_index = 0
 
 def initialize_wumpus_initial_state(wumpus):
     global wumpus_initial_state
@@ -24,12 +28,16 @@ def initialize_wumpus_initial_state(wumpus):
     wumpus.set_position(posx, posy)
 
 def initialize_wumpus_goal_state(wumpus):
+    global goal_bush, stop_playing
+
+    all_bushes_burned = True
     # min_distance = 1000
     min_distance = 0
     goal_x = 0
     goal_y = 0
     for bush in environment.bushes:
         if bush.state == environment.Bush.EXTINGUISHED_STATE or bush.state == environment.Bush.NORMAL_STATE:
+            all_bushes_burned = False
             x_diff = bush.x - wumpus.x
             y_diff = bush.y - wumpus.y
             dist = sqrt(x_diff**2 + y_diff**2)
@@ -38,19 +46,33 @@ def initialize_wumpus_goal_state(wumpus):
                 min_distance = dist
                 goal_x = bush.x
                 goal_y = bush.y
+                goal_bush = bush
 
     global wumpus_goal_state
     wumpus_goal_state = DotDriveState(goal_x, goal_y, WUMPUS_STEP_PER_CYCLE)
 
+    if all_bushes_burned:
+        stop_playing = True
+
 
 def is_wumpus_path_ready():
-    return wumpus_path_ready
+    return (wumpus_path_ready == 1)
 
 def get_wumpus_path():
     return wumpus_path
 
 def get_wumpus_explored_states():
     return wumpus_explored_states
+
+def reconstruct_path(state_chained_list):
+    path = []
+    path.append(state_chained_list.pop())
+    index = 0
+    while path[index].parent_state:
+        path.append(path[index].parent_state)
+        index += 1
+    path.reverse()
+    return path
 
 def search_path(vehicle, obstacles, end_state):
     max_iterations = 10000
@@ -74,14 +96,12 @@ def search_path(vehicle, obstacles, end_state):
 
         if current_state.goal_check(end_state):
 
-            # path = reconstruct_path(search_path.closed_states)
-            path = [1, 2, 4]
+            path = reconstruct_path(search_path.closed_states)
 
             print("success")
             print("Finished reconstructing path")
             print("Number of iterations: ", search_path.iterations)
             print("Number of waypoints: ", len(path))
-            print("Press any key to visualize the path")
 
             exit_code = 1
             return exit_code, path, search_path.closed_states
@@ -99,8 +119,10 @@ def search_path(vehicle, obstacles, end_state):
 def wumpus_main(wumpus):
     global wumpus_path, wumpus_path_ready, wumpus_initial_state, wumpus_ready_for_planning
     global wumpus_explored_states
+    global wumpus_path_state_index
+    global goal_bush
 
-    while True:
+    while not stop_playing:
         if not wumpus_ready_for_planning:
             wumpus_ready_for_planning = True
             wumpus_initial_state = DotDriveState(wumpus.x, wumpus.y, WUMPUS_STEP_PER_CYCLE)
@@ -112,10 +134,34 @@ def wumpus_main(wumpus):
 
             print("Initial state x: ", wumpus_initial_state.x, " y: ", wumpus_initial_state.y)
             print("Goal state x: ", wumpus_goal_state.x, " y: ", wumpus_goal_state.y)
-        elif not wumpus_path_ready:
+        elif wumpus_path_ready == 0:
+            # Continue searching
             wumpus_path_ready, wumpus_path, wumpus_explored_states = search_path(wumpus, environment.bushes, wumpus_goal_state)
+        elif wumpus_path_ready == -1:
+            # Solution not found
+            wumpus_path_state_index = 0
+            wumpus_path_ready = False
+            wumpus_ready_for_planning = False
         else:
-            print("Path found")
-            # wumpus.set_position(i, 300)
-            time.sleep(1)
-            #TODO logic to execute the steps in the found path
+            # solution found
+            if wumpus_path_state_index < len(wumpus_path):
+                state = wumpus_path[wumpus_path_state_index]
+                wumpus.set_position(state.x, state.y)
+
+                # This defines the speed at which wumpus moves
+                # the grid for wumpus is 5 meters, so it is moving 5 meters ever 1.5 secs in simulation time
+                # speed = 5/1.5 = 3.3m/s
+                simulation_time_between_steps = 1.5
+                # simulation_time_between_steps = 0.1
+                real_time_millis = simulation_time_between_steps/(environment.REAL_TO_SIMULATION_SECS_PER_MILLIS*1000)
+                time.sleep(real_time_millis)
+
+                wumpus_path_state_index += 1
+            else:
+                # wumpus.set_position(wumpus_goal_state.x, wumpus_goal_state.y)
+                # time.sleep(real_time_millis)
+                goal_bush.touched = True
+
+                wumpus_path_state_index = 0
+                wumpus_path_ready = False
+                wumpus_ready_for_planning = False
