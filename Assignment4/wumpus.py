@@ -10,6 +10,7 @@ wumpus_ready_for_planning = False
 wumpus_initial_state = None
 wumpus_goal_state = None
 
+wumpus_explored_states = []
 wumpus_path = []
 wumpus_path_ready = False
 
@@ -47,6 +48,9 @@ def is_wumpus_path_ready():
 
 def get_wumpus_path():
     return wumpus_path
+
+def get_wumpus_explored_states():
+    return wumpus_explored_states
 
 def search_path(vehicle, obstacles, end_state):
     max_iterations = 10000
@@ -94,7 +98,7 @@ def search_path(vehicle, obstacles, end_state):
 
 def wumpus_main(wumpus):
     global wumpus_path, wumpus_path_ready, wumpus_initial_state, wumpus_ready_for_planning
-    global open_states, closed_states, iterations
+    global wumpus_explored_states
 
     while True:
         if not wumpus_ready_for_planning:
@@ -109,7 +113,7 @@ def wumpus_main(wumpus):
             print("Initial state x: ", wumpus_initial_state.x, " y: ", wumpus_initial_state.y)
             print("Goal state x: ", wumpus_goal_state.x, " y: ", wumpus_goal_state.y)
         elif not wumpus_path_ready:
-            wumpus_path_ready, wumpus_path, explored_states = search_path(wumpus, environment.bushes, wumpus_goal_state)
+            wumpus_path_ready, wumpus_path, wumpus_explored_states = search_path(wumpus, environment.bushes, wumpus_goal_state)
         else:
             print("Path found")
             # wumpus.set_position(i, 300)

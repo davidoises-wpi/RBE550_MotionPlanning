@@ -9,6 +9,9 @@ class SimpleVehicleSprite():
         self.x = initial_pos[0]
         self.y = initial_pos[1]
 
+        self.img_file = img_file
+        self.scaling = scaling
+
         self.image = pygame.image.load(img_file).convert_alpha()
         if scaling:
             self.image = pygame.transform.scale(self.image, scaling)
@@ -46,6 +49,9 @@ class SimpleVehicleSprite():
                         collision = True
 
         return collision
+
+    def __deepcopy__(self, soemthing_else):
+        return SimpleVehicleSprite(self.img_file, self.orientation_offset, (self.x, self.y), self.scaling)
 
 
 class TrailerVehicleSprite():

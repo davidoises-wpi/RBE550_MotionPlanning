@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from math import tan, cos, sin, pi, radians, degrees, sqrt
 import environment
+import copy
 
 class State(ABC):
 
@@ -185,12 +186,13 @@ class DotDriveState(State):
                     if new_state not in closed_states:
 
                         # 3. Check if the new state is in collision
-                        vehicle.set_position(x, y)
-                        vehicle.set_orientation(degrees(0))
-                        vehicle.update()
+                        temp_vehicle = copy.deepcopy(vehicle)
+                        temp_vehicle.set_position(x, y)
+                        temp_vehicle.set_orientation(degrees(0))
+                        temp_vehicle.update()
                         for obstacle in obstacles:
                             # TODO find a way to check coliisions while multithreading
-                            colided = obstacle.check_collisions([vehicle])
+                            colided = obstacle.check_collisions([temp_vehicle])
                             if colided:
                                 break
                         # colided = vehicle.check_collision(obstacles)
@@ -215,9 +217,9 @@ class DotDriveState(State):
                                 new_state.cost = tentative_new_cost
                                 new_state.total_cost = tentative_new_cost + heuristic_cost
                                 neighbors.append(new_state)
-                        vehicle.set_position(original_x, original_y)
-                        vehicle.set_orientation(original_angle)
-                        vehicle.update()
+                        temp_vehicle.set_position(original_x, original_y)
+                        temp_vehicle.set_orientation(original_angle)
+                        temp_vehicle.update()
 
         return neighbors
 
@@ -226,7 +228,7 @@ class DotDriveState(State):
         euclidean distance from goal
         """
 
-        distance_multiplier = 1
+        distance_multiplier = 2
         dist = self.calculate_euclidean_distance(goal_state)
 
         return distance_multiplier*dist
@@ -235,7 +237,7 @@ class DotDriveState(State):
         """ Checks if the current state is whithin acceptable tolerance from the goal """
         dist = self.calculate_euclidean_distance(other_state)
 
-        return dist < 5*environment.METERS_TO_PIXELS
+        return dist < 15*environment.METERS_TO_PIXELS
 
     def __str__(self):
         return f"x: {self.x} y: {self.y} cost: {self.cost}"
