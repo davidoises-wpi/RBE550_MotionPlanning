@@ -37,15 +37,15 @@ class State(ABC):
 
 class AckermannDriveState(State):
 
-    # 25 meters per second max speed
-    MAX_V_M = 25
+    # meters per second max speed
+    MAX_V_M = 10
 
-    # Max wheel angle of 45 degrees
-    MAX_PSI_DEG = 45
+    # Steering angle = atan(wheelbase/(radius - length/2))
+    MAX_PSI_DEG = 15
 
-    WHEELBASE_M = 2.8
+    WHEELBASE_M = 3
 
-    WHEELBASE_PIXELS = 86
+    WHEELBASE_PIXELS = WHEELBASE_M*environment.METERS_TO_PIXELS
 
     def __init__(self, x, y, angle, psi, v, dt):
         super().__init__(x, y, angle)
@@ -93,10 +93,16 @@ class AckermannDriveState(State):
                     if new_state not in closed_states:
 
                         # 3. Check if the new state is in collision
-                        vehicle.set_position(x, y)
-                        vehicle.set_orientation(degrees(angle))
-                        vehicle.update()
-                        colided = vehicle.check_collision(obstacles)
+                        temp_vehicle = copy.deepcopy(vehicle)
+                        temp_vehicle.set_position(x, y)
+                        temp_vehicle.set_orientation(degrees(angle))
+                        temp_vehicle.update()
+                        colided = False
+                        for obstacle in obstacles:
+                            colided = obstacle.check_collisions([temp_vehicle])
+                            if colided:
+                                break
+                        # colided = vehicle.check_collision(obstacles)
                         if not colided:
 
                             # Calculate the new costs
@@ -118,9 +124,9 @@ class AckermannDriveState(State):
                                 new_state.cost = tentative_new_cost
                                 new_state.total_cost = tentative_new_cost + heuristic_cost
                                 neighbors.append(new_state)
-                        vehicle.set_position(original_x, original_y)
-                        vehicle.set_orientation(original_angle)
-                        vehicle.update()
+                        temp_vehicle.set_position(original_x, original_y)
+                        temp_vehicle.set_orientation(original_angle)
+                        temp_vehicle.update()
 
         return neighbors
 
@@ -137,19 +143,17 @@ class AckermannDriveState(State):
         if self.v < 0:
             reverse_multiplier = 1.8
         steering_multiplier = 1
-        if (self.v * prev_state.v) < 0:
-            steering_multiplier = 1.5
         dist = self.calculate_euclidean_distance(goal_state)
         angle_diff = degrees(abs(self.angle-goal_state.angle)%(2*pi))
 
-        return steering_multiplier*reverse_multiplier*distance_multiplier*dist + angle_diff
+        return steering_multiplier*reverse_multiplier*distance_multiplier*dist
 
     def goal_check(self, other_state):
         """ Checks if the current state is whithin acceptable tolerance from the goal """
         dist = self.calculate_euclidean_distance(other_state)
         angle_diff = degrees(abs(self.angle - other_state.angle)%(2*pi))
 
-        return dist <10 and angle_diff < 5
+        return dist < 15*environment.METERS_TO_PIXELS #and angle_diff < 5
 
     def __str__(self):
         return f"x: {self.x} y: {self.y} angle: {degrees(self.angle)} psi: {degrees(self.psi)} v: {self.v} cost: {self.cost}"
@@ -190,6 +194,7 @@ class DotDriveState(State):
                         temp_vehicle.set_position(x, y)
                         temp_vehicle.set_orientation(degrees(0))
                         temp_vehicle.update()
+                        colided = False
                         for obstacle in obstacles:
                             colided = obstacle.check_collisions([temp_vehicle])
                             if colided:
