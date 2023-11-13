@@ -4,6 +4,7 @@ import pygame
 import environment
 from vehicles import SimpleVehicleSprite
 from wumpus import wumpus_main, get_wumpus_path, is_wumpus_path_ready, initialize_wumpus_initial_state, get_wumpus_explored_states
+import wumpus as wp
 import threading
 
 from math import cos, sin, radians, degrees
@@ -136,11 +137,27 @@ def main():
 
     run = True
     while run:
+        wp.stop_playing = True
+
+        intact_bushes = 0
+        burned_bushes = 0
+        extingguished_bushes = 0
+        for bush in environment.bushes:
+            if bush.state == environment.Bush.EXTINGUISHED_STATE:
+                extingguished_bushes += 1
+            elif bush.state == environment.Bush.BURNED_STATE:
+                burned_bushes += 1
+            elif bush.state == environment.Bush.NORMAL_STATE:
+                intact_bushes += 1
         # Handle user events
         for event in pygame.event.get():
             # User clicked on close button
             if event.type == pygame.QUIT:
                 run = False
+
+    print("Intact bushes", intact_bushes)
+    print("Burned bushes", burned_bushes)
+    print("Extinguished bushes", extingguished_bushes)
 
     # Finish execution
     pygame.quit()
