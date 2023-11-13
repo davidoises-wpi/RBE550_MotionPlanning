@@ -3,6 +3,7 @@ from states import AckermannDriveState
 import time
 from math import radians, sqrt, degrees
 from random import random
+import copy
 
 FIRETRUCK_STEP_PER_CYCLE = 5*environment.METERS_TO_PIXELS
 
@@ -24,6 +25,15 @@ total_planning_time = 0
 
 dt = 0.5
 visualization_time_step = 0.02
+
+prm_nodes = []
+prm_connections = []
+prm_n = 500
+prm_k = 7
+prm_state = 0
+prm_index = 0
+neighbor_index = 0
+neighbors = []
 
 def initialize_firetruck_initial_state(firetruck, wumpus):
     global firetruck_initial_state
@@ -75,6 +85,92 @@ def reconstruct_path(state_chained_list):
         index += 1
     path.reverse()
     return path
+
+def build_map(vehicle, obstacles):
+    global prm_nodes,prm_index, prm_state, neighbor_index, neighbors, prm_n
+    if prm_index < prm_n and prm_state == 0:
+        x = random()*environment.SCREEN_WIDTH_PIXELS
+        y = random()*environment.SCREEN_HEIGHT_PIXELS
+        angle = radians(random()*360.0)
+
+        new_state = AckermannDriveState(x, y, angle, 0, 0, 0)
+
+        if new_state not in prm_nodes:
+
+            temp_vehicle = copy.deepcopy(vehicle)
+            temp_vehicle.set_position(x, y)
+            temp_vehicle.set_orientation(degrees(angle))
+            temp_vehicle.update()
+
+            colided = False
+            for obstacle in obstacles:
+                colided = obstacle.check_collisions([temp_vehicle])
+                if colided:
+                    break
+
+            if not colided:
+                prm_nodes.append(new_state)
+                prm_index += 1
+
+    if prm_index == prm_n and prm_state == 0:
+        print("connecting")
+        prm_state = 1
+        prm_index = 0
+
+    if prm_index == prm_n and prm_state == 1:
+        print("PRM ready")
+
+    if prm_index < prm_n and prm_state == 1:
+        path_ready = 0
+        lowest_distance = 10000
+
+
+        # neighbor_index = 0
+        if neighbor_index < prm_k:
+
+            neighbor_node = None
+            for node in prm_nodes:
+                if not node == prm_nodes[prm_index]:
+                    if node not in neighbors:
+                        distance = node.calculate_euclidean_distance(prm_nodes[prm_index])
+                        if distance < lowest_distance:
+                            lowest_distance = distance
+                            neighbor_node = node
+
+            neighbors.append(neighbor_node)
+
+            local_search.open_states = [prm_nodes[prm_index]]
+            local_search.closed_states = []
+            local_search.iterations = 0
+
+            path = []
+            explored = []
+
+            while path_ready == 0:
+                # Continue searching
+                path_ready, path, explored = local_search(vehicle, obstacles, neighbor_node)
+
+            if path_ready == 1:
+                # print(len(path))
+                prm_connections.append((prm_nodes[prm_index], neighbor_node, path))
+                neighbor_index += 1
+
+            if path_ready == -1:
+                print(distance, " ", len(neighbors), " ", neighbor_index)
+            #     print("Initial state x: ", prm_nodes[prm_index].x, " y: ", prm_nodes[prm_index].y)
+            #     print("Goal state x: ", neighbor_node.x, " y: ", neighbor_node.y)
+            #     prm_nodes.remove(neighbor_node)
+
+        if len(neighbors) > 10 and neighbor_index == 0:
+            del prm_nodes[prm_index]
+            prm_n -= 1
+
+        if neighbor_index == prm_k:
+            print(prm_index)
+            neighbors = []
+            prm_index += 1
+            neighbor_index = 0
+
 
 def local_search(vehicle, obstacles, end_state):
     max_iterations = 10000

@@ -81,10 +81,6 @@ class AckermannDriveState(State):
                 x = round(self.x + dx)
                 y = round(self.y + dy)
 
-                original_x = vehicle.x
-                original_y = vehicle.y
-                original_angle = vehicle.orientation
-
                 # 1. Check if its withing map limits
                 if x >= xlimit[0] and x <= xlimit[1] and y >= ylimit[0] and y <= ylimit[1]:
 
@@ -124,9 +120,6 @@ class AckermannDriveState(State):
                                 new_state.cost = tentative_new_cost
                                 new_state.total_cost = tentative_new_cost + heuristic_cost
                                 neighbors.append(new_state)
-                        temp_vehicle.set_position(original_x, original_y)
-                        temp_vehicle.set_orientation(original_angle)
-                        temp_vehicle.update()
 
         return neighbors
 
@@ -178,10 +171,6 @@ class DotDriveState(State):
                 x = round(self.x + dx)
                 y = round(self.y + dy)
 
-                original_x = vehicle.x
-                original_y = vehicle.y
-                original_angle = vehicle.orientation
-
                 # 1. Check if its withing map limits
                 if x >= xlimit[0] and x <= xlimit[1] and y >= ylimit[0] and y <= ylimit[1]:
 
@@ -221,9 +210,6 @@ class DotDriveState(State):
                                 new_state.cost = tentative_new_cost
                                 new_state.total_cost = tentative_new_cost + heuristic_cost
                                 neighbors.append(new_state)
-                        temp_vehicle.set_position(original_x, original_y)
-                        temp_vehicle.set_orientation(original_angle)
-                        temp_vehicle.update()
 
         return neighbors
 

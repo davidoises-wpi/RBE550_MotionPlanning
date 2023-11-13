@@ -27,7 +27,7 @@ def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_p
         window.fill((128, 0, 128), ((state.x, state.y), (2, 2)))
 
     for point in firetruck_path:
-        window.fill((0, 0, 255), ((point.x,point.y), (2, 2)))
+        window.fill((255, 0, 0), ((point.x,point.y), (2, 2)))
 
     for vehicle in vehicles:
         # vehicle.set_position(point[0], point[1])
@@ -69,6 +69,22 @@ def main():
 
     environment.populate_map(0.1)
 
+    """ Main loop with search and visualization """
+    run = True
+    while run:
+        # Handle user events
+        for event in pygame.event.get():
+            # User clicked on close button
+            if event.type == pygame.QUIT:
+                run = False
+
+        ft.build_map(firetruck, environment.bushes)
+
+        all_states = []
+        for combo in ft.prm_connections:
+            all_states += combo[2]
+        render_all(screen, clock, [wumpus, firetruck], environment.bushes, [], [], all_states, ft.prm_nodes, 0)
+
     firetruck_search_thread = threading.Thread(target=ft.firetruck_main, args=(firetruck,))
     firetruck_search_thread.daemon = True
     firetruck_search_thread.start()
@@ -79,7 +95,6 @@ def main():
 
     start_time_real = pygame.time.get_ticks()
 
-    """ Main loop with search and visualization """
     run = True
     while run:
 
