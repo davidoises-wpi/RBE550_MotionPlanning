@@ -48,12 +48,6 @@ def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_p
 
 def main():
 
-    steps = 10
-    forward = False
-    reverse = False
-    rotate_left = False
-    rotate_right = False
-
     project_root = Path(sys.path[0])
 
     pygame.init()
@@ -66,8 +60,6 @@ def main():
     firetruck_size = (10*environment.METERS_TO_PIXELS, 7*environment.METERS_TO_PIXELS)
     firetruck = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100), firetruck_size)
     ft.initialize_firetruck_initial_state(firetruck)
-
-    car = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100), firetruck_size)
 
     # Wumpus initialization
     wumpus_size = (5*environment.METERS_TO_PIXELS, 3.5*environment.METERS_TO_PIXELS)
@@ -97,41 +89,6 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT or event.key == ord('a'):
-                    rotate_left = True
-                if event.key == pygame.K_RIGHT or event.key == ord('d'):
-                    rotate_right = True
-                if event.key == pygame.K_UP or event.key == ord('w'):
-                    forward = True
-                if event.key == pygame.K_DOWN or event.key == ord('s'):
-                    reverse = True
-
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_LEFT or event.key == ord('a'):
-                    rotate_left = False
-                if event.key == pygame.K_RIGHT or event.key == ord('d'):
-                    rotate_right = False
-                if event.key == pygame.K_UP or event.key == ord('w'):
-                    forward = False
-                if event.key == pygame.K_DOWN or event.key == ord('s'):
-                    reverse = False
-
-        car_x_step = steps*cos(radians(car.orientation))
-        car_y_step = -steps*sin(radians(car.orientation))
-        car_angle_step = 1
-
-        if forward or reverse:
-            if reverse:
-                car_x_step *= -1
-                car_y_step *= -1
-            car.set_position(car.x + car_x_step, car.y + car_y_step)
-
-        if rotate_left or rotate_right:
-            if rotate_right:
-                car_angle_step *= -1
-            car.set_orientation(car.orientation + car_angle_step)
-
         elapsed_time_real = pygame.time.get_ticks() - start_time_real
         elapsed_time_simulation = elapsed_time_real*environment.REAL_TO_SIMULATION_SECS_PER_MILLIS
 
@@ -147,7 +104,7 @@ def main():
             wumpus_path = wp.get_wumpus_path()
         wumpus_states = wp.get_wumpus_explored_states()
 
-        render_all(screen, clock, [wumpus, car, firetruck], environment.bushes, wumpus_states, wumpus_path, firetruck_states, firetruck_path, round(elapsed_time_simulation))
+        render_all(screen, clock, [wumpus, firetruck], environment.bushes, wumpus_states, wumpus_path, firetruck_states, firetruck_path, round(elapsed_time_simulation))
 
         if elapsed_time_simulation >= 3600.0:
             run = False
