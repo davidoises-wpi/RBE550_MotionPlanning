@@ -18,6 +18,8 @@ wumpus_path_ready = False
 
 wumpus_path_state_index = 0
 
+planning_start_time = 0
+
 def initialize_wumpus_initial_state(wumpus):
     global wumpus_initial_state
 
@@ -98,10 +100,10 @@ def search_path(vehicle, obstacles, end_state):
 
             path = reconstruct_path(search_path.closed_states)
 
-            print("success")
-            print("Finished reconstructing path")
-            print("Number of iterations: ", search_path.iterations)
-            print("Number of waypoints: ", len(path))
+            # print("success")
+            # print("Finished reconstructing path")
+            # print("Number of iterations: ", search_path.iterations)
+            # print("Number of waypoints: ", len(path))
 
             exit_code = 1
             return exit_code, path, search_path.closed_states
@@ -121,6 +123,7 @@ def wumpus_main(wumpus):
     global wumpus_explored_states
     global wumpus_path_state_index
     global goal_bush
+    global planning_start_time
 
     while not stop_playing:
         if not wumpus_ready_for_planning:
@@ -132,8 +135,10 @@ def wumpus_main(wumpus):
             search_path.closed_states = []
             search_path.iterations = 0
 
-            print("Initial state x: ", wumpus_initial_state.x, " y: ", wumpus_initial_state.y)
-            print("Goal state x: ", wumpus_goal_state.x, " y: ", wumpus_goal_state.y)
+            # print("Initial state x: ", wumpus_initial_state.x, " y: ", wumpus_initial_state.y)
+            # print("Goal state x: ", wumpus_goal_state.x, " y: ", wumpus_goal_state.y)
+
+            planning_start_time = time.time()
         elif wumpus_path_ready == 0:
             # Continue searching
             wumpus_path_ready, wumpus_path, wumpus_explored_states = search_path(wumpus, environment.bushes, wumpus_goal_state)
@@ -143,6 +148,10 @@ def wumpus_main(wumpus):
             wumpus_path_ready = False
             wumpus_ready_for_planning = False
         else:
+            if wumpus_path_ready == 1:
+                planning_time = time.time() - planning_start_time
+                print("A* Planning time: ", planning_time)
+                wumpus_path_ready = 2
             # solution found
             if wumpus_path_state_index < len(wumpus_path):
                 state = wumpus_path[wumpus_path_state_index]
