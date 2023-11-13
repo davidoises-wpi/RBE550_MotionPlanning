@@ -20,11 +20,11 @@ firetruck_path_state_index = 0
 
 planning_start_time = 0
 
-def initialize_firetruck_initial_state(firetruck):
+def initialize_firetruck_initial_state(firetruck, wumpus):
     global firetruck_initial_state
 
-    posx = round(random()*environment.SCREEN_WIDTH_PIXELS)
-    posy = round(random()*environment.SCREEN_HEIGHT_PIXELS)
+    posx = round(environment.SCREEN_WIDTH_PIXELS - wumpus.x)
+    posy = round(environment.SCREEN_HEIGHT_PIXELS - wumpus.y)
 
     firetruck_initial_state = DotDriveState(posx, posy, FIRETRUCK_STEP_PER_CYCLE)
     firetruck.set_position(posx, posy)
@@ -32,29 +32,25 @@ def initialize_firetruck_initial_state(firetruck):
 def initialize_firetruck_goal_state(firetruck):
     global goal_bush, stop_playing
 
-    all_bushes_burned = True
-    # min_distance = 1000
-    min_distance = 0
+    best_match = 0
     goal_x = 0
     goal_y = 0
     for bush in environment.bushes:
-        if bush.state == environment.Bush.EXTINGUISHED_STATE or bush.state == environment.Bush.NORMAL_STATE:
-            all_bushes_burned = False
+        if bush.state == environment.Bush.BURNING_STATE or bush.state == environment.Bush.EXPANDING_STATE:
             x_diff = bush.x - firetruck.x
             y_diff = bush.y - firetruck.y
             dist = sqrt(x_diff**2 + y_diff**2)
-            # if dist < min_distance:
-            if dist > min_distance:
-                min_distance = dist
+
+            metric = bush.burning_level + 1.0/dist
+            if metric > best_match:
+                best_match = metric
                 goal_x = bush.x
                 goal_y = bush.y
                 goal_bush = bush
 
     global firetruck_goal_state
     firetruck_goal_state = DotDriveState(goal_x, goal_y, FIRETRUCK_STEP_PER_CYCLE)
-
-    if all_bushes_burned:
-        stop_playing = True
+    # print(goal_bush.state)
 
 
 def is_firetruck_path_ready():
@@ -125,52 +121,65 @@ def firetruck_main(firetruck):
     global goal_bush
     global planning_start_time
 
-    while not stop_playing:
-        if not firetruck_ready_for_planning:
-            firetruck_ready_for_planning = True
-            firetruck_initial_state = DotDriveState(firetruck.x, firetruck.y, FIRETRUCK_STEP_PER_CYCLE)
-            initialize_firetruck_goal_state(firetruck)
-
-            search_path.open_states = [firetruck_initial_state]
-            search_path.closed_states = []
-            search_path.iterations = 0
-
-            # print("Initial state x: ", firetruck_initial_state.x, " y: ", firetruck_initial_state.y)
-            # print("Goal state x: ", firetruck_goal_state.x, " y: ", firetruck_goal_state.y)
-
-            planning_start_time = time.time()
-        elif firetruck_path_ready == 0:
-            # Continue searching
-            firetruck_path_ready, firetruck_path, firetruck_explored_states = search_path(firetruck, environment.bushes, firetruck_goal_state)
-        elif firetruck_path_ready == -1:
-            # Solution not found
+    while True:
+        all_bushes_burned = True
+        for bush in environment.bushes:
+            if bush.state == environment.Bush.BURNING_STATE or bush.state == environment.Bush.EXPANDING_STATE:
+                all_bushes_burned = False
+        if all_bushes_burned:
             firetruck_path_state_index = 0
             firetruck_path_ready = False
             firetruck_ready_for_planning = False
-        else:
-            if firetruck_path_ready == 1:
-                planning_time = time.time() - planning_start_time
-                print("PRM Planning time: ", planning_time)
-                firetruck_path_ready = 2
-            # solution found
-            if firetruck_path_state_index < len(firetruck_path):
-                state = firetruck_path[firetruck_path_state_index]
-                firetruck.set_position(state.x, state.y)
 
-                # This defines the speed at which wumpus moves
-                # the grid for wumpus is 5 meters, so it is moving 5 meters ever 1.5 secs in simulation time
-                # speed = 5/1.5 = 3.3m/s
-                simulation_time_between_steps = 1.5
-                # simulation_time_between_steps = 0.1
-                real_time_millis = simulation_time_between_steps/(environment.REAL_TO_SIMULATION_SECS_PER_MILLIS*1000)
-                time.sleep(real_time_millis)
+        if not all_bushes_burned and not stop_playing:
+            if not firetruck_ready_for_planning:
+                firetruck_ready_for_planning = True
+                firetruck_initial_state = DotDriveState(firetruck.x, firetruck.y, FIRETRUCK_STEP_PER_CYCLE)
+                initialize_firetruck_goal_state(firetruck)
 
-                firetruck_path_state_index += 1
-            else:
-                # wumpus.set_position(firetruck_goal_state.x, firetruck_goal_state.y)
-                # time.sleep(real_time_millis)
-                goal_bush.touched = True
+                search_path.open_states = [firetruck_initial_state]
+                search_path.closed_states = []
+                search_path.iterations = 0
 
+                # print("Initial state x: ", firetruck_initial_state.x, " y: ", firetruck_initial_state.y)
+                # print("Goal state x: ", firetruck_goal_state.x, " y: ", firetruck_goal_state.y)
+
+                planning_start_time = time.time()
+            elif firetruck_path_ready == 0:
+                # Continue searching
+                firetruck_path_ready, firetruck_path, firetruck_explored_states = search_path(firetruck, environment.bushes, firetruck_goal_state)
+            elif firetruck_path_ready == -1:
+                # Solution not found
                 firetruck_path_state_index = 0
                 firetruck_path_ready = False
                 firetruck_ready_for_planning = False
+            else:
+                if firetruck_path_ready == 1:
+                    planning_time = time.time() - planning_start_time
+                    print("PRM Planning time: ", planning_time)
+                    firetruck_path_ready = 2
+                # solution found
+                if firetruck_path_state_index < len(firetruck_path):
+                    state = firetruck_path[firetruck_path_state_index]
+                    firetruck.set_position(state.x, state.y)
+
+                    # This defines the speed at which wumpus moves
+                    # the grid for wumpus is 5 meters, so it is moving 5 meters ever 1.5 secs in simulation time
+                    # speed = 5/1.5 = 3.3m/s
+                    simulation_time_between_steps = 0.5
+                    # simulation_time_between_steps = 0.1
+                    real_time_millis = simulation_time_between_steps/(environment.REAL_TO_SIMULATION_SECS_PER_MILLIS*1000)
+                    time.sleep(real_time_millis)
+
+                    firetruck_path_state_index += 1
+                else:
+                    # wait 5 seconds in simulation time
+                    real_time_millis = 5/(environment.REAL_TO_SIMULATION_SECS_PER_MILLIS*1000)
+                    time.sleep(real_time_millis)
+
+                    goal_bush.extinguished = True
+                    goal_bush.touched = False
+
+                    firetruck_path_state_index = 0
+                    firetruck_path_ready = False
+                    firetruck_ready_for_planning = False

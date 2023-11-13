@@ -9,9 +9,8 @@ SCREEN_WIDTH_METERS = 250
 
 METERS_TO_PIXELS = SCREEN_HEIGHT_PIXELS/SCREEN_WIDTH_METERS
 
-# TOTAL_REAL_TIME_SEC = 1800
 TOTAL_REAL_TIME_SEC = 60
-# TOTAL_REAL_TIME_SEC = 10
+# TOTAL_REAL_TIME_SEC = 450
 
 # TOTAL_REAL_TIME_SEC = 120
 TOTAL_SIMULATION_TIME_SEC = 3600
@@ -138,13 +137,6 @@ def  populate_map(density):
 
 def update_environment(firetruck, wumpus, time):
     for bush in bushes:
-        touched = bush.check_collisions([wumpus])
-
-        # Bush is touched if another bush had already set its flag or if wumpus was too close
-        bush.touched = bush.touched or touched
-
-        # Pending to implement logic based on firetruck
-        bush.extinguished = False
 
         # Bushes state machine transitions
         if bush.state == Bush.NORMAL_STATE:

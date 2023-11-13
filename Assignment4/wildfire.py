@@ -7,7 +7,7 @@ import wumpus as wp
 import firetruck as ft
 import threading
 
-from math import cos, sin, radians, degrees
+import time
 
 FPS = 60
 
@@ -57,15 +57,15 @@ def main():
 
     clock = pygame.time.Clock()
 
-    firetruck_size = (10*environment.METERS_TO_PIXELS, 7*environment.METERS_TO_PIXELS)
-    firetruck = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100), firetruck_size)
-    ft.initialize_firetruck_initial_state(firetruck)
-
     # Wumpus initialization
     wumpus_size = (5*environment.METERS_TO_PIXELS, 3.5*environment.METERS_TO_PIXELS)
     # wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (0, 0), wumpus_size)
     wumpus = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 0, (100, 100), wumpus_size)
     wp.initialize_wumpus_initial_state(wumpus)
+
+    firetruck_size = (10*environment.METERS_TO_PIXELS, 7*environment.METERS_TO_PIXELS)
+    firetruck = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100), firetruck_size)
+    ft.initialize_firetruck_initial_state(firetruck, wumpus)
 
     environment.populate_map(0.1)
 
@@ -112,6 +112,7 @@ def main():
     run = True
     while run:
         wp.stop_playing = True
+        ft.stop_playing = True
 
         intact_bushes = 0
         burned_bushes = 0
