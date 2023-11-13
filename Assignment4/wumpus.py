@@ -127,6 +127,7 @@ def wumpus_main(wumpus):
             if bush.state == environment.Bush.NORMAL_STATE or bush.state == environment.Bush.EXTINGUISHED_STATE:
                 all_bushes_burned = False
         if all_bushes_burned:
+            time.sleep(0.1)
             wumpus_path_state_index = 0
             wumpus_path_ready = False
             wumpus_ready_for_planning = False

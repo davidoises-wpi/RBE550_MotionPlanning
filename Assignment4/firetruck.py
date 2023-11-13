@@ -113,63 +113,87 @@ def build_map(vehicle, obstacles):
                 prm_index += 1
 
     if prm_index == prm_n and prm_state == 0:
-        print("connecting")
+        print("Connecting sample nodes")
         prm_state = 1
         prm_index = 0
 
     if prm_index == prm_n and prm_state == 1:
         print("PRM ready")
+        return 1
 
     if prm_index < prm_n and prm_state == 1:
-        path_ready = 0
-        lowest_distance = 10000
 
-
-        # neighbor_index = 0
-        if neighbor_index < prm_k:
-
-            neighbor_node = None
-            for node in prm_nodes:
-                if not node == prm_nodes[prm_index]:
-                    if node not in neighbors:
-                        distance = node.calculate_euclidean_distance(prm_nodes[prm_index])
-                        if distance < lowest_distance:
-                            lowest_distance = distance
-                            neighbor_node = node
-
-            neighbors.append(neighbor_node)
-
-            local_search.open_states = [prm_nodes[prm_index]]
-            local_search.closed_states = []
-            local_search.iterations = 0
-
-            path = []
-            explored = []
-
-            while path_ready == 0:
-                # Continue searching
-                path_ready, path, explored = local_search(vehicle, obstacles, neighbor_node)
-
-            if path_ready == 1:
-                # print(len(path))
-                prm_connections.append((prm_nodes[prm_index], neighbor_node, path))
-                neighbor_index += 1
-
-            if path_ready == -1:
-                print(distance, " ", len(neighbors), " ", neighbor_index)
-            #     print("Initial state x: ", prm_nodes[prm_index].x, " y: ", prm_nodes[prm_index].y)
-            #     print("Goal state x: ", neighbor_node.x, " y: ", neighbor_node.y)
-            #     prm_nodes.remove(neighbor_node)
-
-        if len(neighbors) > 10 and neighbor_index == 0:
+        ret = connect_node(vehicle, obstacles, prm_nodes[prm_index], prm_k, False)
+        if ret == -1:
+            print("issue")
             del prm_nodes[prm_index]
             prm_n -= 1
 
-        if neighbor_index == prm_k:
+        # if neighbor_index == prm_k:
+        if ret == 1:
             print(prm_index)
-            neighbors = []
             prm_index += 1
-            neighbor_index = 0
+
+def connect_node(vehicle, obstacles, new_node, k_neighbors, stop_if_exists):
+    neighbor_index = 0
+    neighbor_node = None
+    neighbors = []
+
+    if new_node in prm_nodes and stop_if_exists:
+        # Already connected
+        return 1
+
+    while neighbor_index < k_neighbors:
+        # Find k nearest neighbors
+        lowest_distance = 10000
+        for node in prm_nodes:
+            if not node == new_node:
+                if node not in neighbors:
+                    distance = node.calculate_euclidean_distance(new_node)
+                    if distance < lowest_distance:
+                        lowest_distance = distance
+                        neighbor_node = node
+        neighbors.append(neighbor_node)
+
+        local_search.open_states = [new_node]
+        local_search.closed_states = []
+        local_search.iterations = 0
+
+        path = []
+        explored = []
+
+        path_ready = 0
+        while path_ready == 0:
+            # Continue searching
+            path_ready, path, explored = local_search(vehicle, obstacles, neighbor_node)
+
+        if path_ready == 1:
+            prm_connections.append((new_node, neighbor_node, path))
+            neighbor_index += 1
+
+        if path_ready == -1:
+            print(distance, " ", len(neighbors), " ", neighbor_index)
+
+        if len(neighbors) > 10 and neighbor_index == 0:
+            # Couldnt connect it
+            return -1
+
+        if len(neighbors) > 20 and neighbor_index > 0:
+            # At least we made some connections
+            return 1
+    # print("loop finished")
+    return 1
+
+def prm_search(vehicle, obstacles, start_state, end_state):
+    ret = connect_node(vehicle, obstacles, start_state, 1, True)
+    if ret == -1:
+        # Could not connect the initial state
+        return -1
+
+    ret = connect_node(vehicle, obstacles, end_state, 1, True)
+    if ret == -1:
+        # Could not connect the final state
+        return -1
 
 
 def local_search(vehicle, obstacles, end_state):

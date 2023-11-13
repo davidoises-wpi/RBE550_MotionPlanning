@@ -70,6 +70,8 @@ def main():
     environment.populate_map(0.1)
 
     """ Main loop with search and visualization """
+    prm_build_start_time = time.time()
+    prm_build_time = 0
     run = True
     while run:
         # Handle user events
@@ -78,7 +80,11 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
-        ft.build_map(firetruck, environment.bushes)
+        ret = ft.build_map(firetruck, environment.bushes)
+        if ret == 1:
+            prm_build_time = time.time() - prm_build_start_time
+            print(prm_build_time)
+            run = False
 
         all_states = []
         for combo in ft.prm_connections:
