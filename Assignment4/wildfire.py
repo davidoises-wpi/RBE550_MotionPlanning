@@ -3,7 +3,6 @@ import sys
 import pygame
 import environment
 from vehicles import SimpleVehicleSprite
-from wumpus import wumpus_main, get_wumpus_path, is_wumpus_path_ready, initialize_wumpus_initial_state, get_wumpus_explored_states
 import wumpus as wp
 import threading
 
@@ -61,14 +60,13 @@ def main():
     car = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100))
 
     # Wumpus initialization
-    # wumpus_size = (2*environment.METERS_TO_PIXELS, 2*environment.METERS_TO_PIXELS)
-    wumpus_size = (10*environment.METERS_TO_PIXELS, 10*environment.METERS_TO_PIXELS)
+    wumpus_size = (4*environment.METERS_TO_PIXELS, 4*environment.METERS_TO_PIXELS)
     wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (0, 0), wumpus_size)
-    initialize_wumpus_initial_state(wumpus)
+    wp.initialize_wumpus_initial_state(wumpus)
 
     environment.populate_map(0.1)
 
-    wumpus_search_thread = threading.Thread(target=wumpus_main, args=(wumpus,))
+    wumpus_search_thread = threading.Thread(target=wp.wumpus_main, args=(wumpus,))
     wumpus_search_thread.daemon = True
     wumpus_search_thread.start()
 
@@ -126,9 +124,9 @@ def main():
 
         # This is just to render the path
         wumpus_path = []
-        if is_wumpus_path_ready():
-            wumpus_path = get_wumpus_path()
-        wumpus_states = get_wumpus_explored_states()
+        if wp.is_wumpus_path_ready():
+            wumpus_path = wp.get_wumpus_path()
+        wumpus_states = wp.get_wumpus_explored_states()
 
         render_all(screen, clock, [wumpus, car], environment.bushes, wumpus_states, wumpus_path, round(elapsed_time_simulation))
 
