@@ -4,13 +4,14 @@ import pygame
 import environment
 from vehicles import SimpleVehicleSprite
 import wumpus as wp
+import firetruck as ft
 import threading
 
 from math import cos, sin, radians, degrees
 
 FPS = 60
 
-def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_path, time):
+def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_path, firetruck_explored_states, firetruck_path, time):
     window.fill(environment.WHITE)
 
     for bush in bushes:
@@ -19,9 +20,14 @@ def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_p
     for state in wumpus_explored_states:
         window.fill((0, 0, 0), ((state.x, state.y), (2, 2)))
 
-    # if wumpus_path:
     for point in wumpus_path:
         window.fill((255, 0, 0), ((point.x,point.y), (2, 2)))
+
+    for state in firetruck_explored_states:
+        window.fill((128, 0, 128), ((state.x, state.y), (2, 2)))
+
+    for point in firetruck_path:
+        window.fill((0, 0, 255), ((point.x,point.y), (2, 2)))
 
     for vehicle in vehicles:
         # vehicle.set_position(point[0], point[1])
@@ -57,14 +63,23 @@ def main():
 
     clock = pygame.time.Clock()
 
-    car = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100))
+    firetruck_size = (10*environment.METERS_TO_PIXELS, 7*environment.METERS_TO_PIXELS)
+    firetruck = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100), firetruck_size)
+    ft.initialize_firetruck_initial_state(firetruck)
+
+    car = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 180, (100, 100), firetruck_size)
 
     # Wumpus initialization
-    wumpus_size = (4*environment.METERS_TO_PIXELS, 4*environment.METERS_TO_PIXELS)
-    wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (0, 0), wumpus_size)
+    wumpus_size = (5*environment.METERS_TO_PIXELS, 3.5*environment.METERS_TO_PIXELS)
+    # wumpus = SimpleVehicleSprite(str(project_root) + "/assets/wumpus.png", 0, (0, 0), wumpus_size)
+    wumpus = SimpleVehicleSprite(str(project_root) + "/assets/tesla.png", 0, (100, 100), wumpus_size)
     wp.initialize_wumpus_initial_state(wumpus)
 
     environment.populate_map(0.1)
+
+    firetruck_search_thread = threading.Thread(target=ft.firetruck_main, args=(firetruck,))
+    firetruck_search_thread.daemon = True
+    firetruck_search_thread.start()
 
     wumpus_search_thread = threading.Thread(target=wp.wumpus_main, args=(wumpus,))
     wumpus_search_thread.daemon = True
@@ -122,13 +137,17 @@ def main():
 
         environment.update_environment(None, wumpus, elapsed_time_simulation)
 
-        # This is just to render the path
+        firetruck_path = []
+        if ft.is_firetruck_path_ready():
+            firetruck_path = ft.get_firetruck_path()
+        firetruck_states = ft.get_firetruck_explored_states()
+
         wumpus_path = []
         if wp.is_wumpus_path_ready():
             wumpus_path = wp.get_wumpus_path()
         wumpus_states = wp.get_wumpus_explored_states()
 
-        render_all(screen, clock, [wumpus, car], environment.bushes, wumpus_states, wumpus_path, round(elapsed_time_simulation))
+        render_all(screen, clock, [wumpus, car, firetruck], environment.bushes, wumpus_states, wumpus_path, firetruck_states, firetruck_path, round(elapsed_time_simulation))
 
         if elapsed_time_simulation >= 3600.0:
             run = False
