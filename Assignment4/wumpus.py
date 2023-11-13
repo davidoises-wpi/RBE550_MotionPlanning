@@ -19,6 +19,7 @@ wumpus_path_ready = False
 wumpus_path_state_index = 0
 
 planning_start_time = 0
+total_planning_time = 0
 
 def initialize_wumpus_initial_state(wumpus):
     global wumpus_initial_state
@@ -118,7 +119,7 @@ def wumpus_main(wumpus):
     global wumpus_explored_states
     global wumpus_path_state_index
     global goal_bush
-    global planning_start_time
+    global planning_start_time, total_planning_time
 
     while True:
         all_bushes_burned = True
@@ -129,6 +130,10 @@ def wumpus_main(wumpus):
             wumpus_path_state_index = 0
             wumpus_path_ready = False
             wumpus_ready_for_planning = False
+
+        if stop_playing:
+            print("A* Planning time: ", total_planning_time)
+            break
 
         if not all_bushes_burned and not stop_playing:
             if not wumpus_ready_for_planning:
@@ -155,7 +160,7 @@ def wumpus_main(wumpus):
             else:
                 if wumpus_path_ready == 1:
                     planning_time = time.time() - planning_start_time
-                    print("A* Planning time: ", planning_time)
+                    total_planning_time += planning_time
                     wumpus_path_ready = 2
                 # solution found
                 if wumpus_path_state_index < len(wumpus_path):

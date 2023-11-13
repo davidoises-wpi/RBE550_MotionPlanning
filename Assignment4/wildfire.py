@@ -130,6 +130,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
+    print("Total number of bushes", len(environment.bushes))
     print("Intact bushes", intact_bushes)
     print("Burned bushes", burned_bushes)
     print("Extinguished bushes", extingguished_bushes)

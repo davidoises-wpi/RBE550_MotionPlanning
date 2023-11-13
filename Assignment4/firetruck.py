@@ -19,6 +19,7 @@ firetruck_path_ready = False
 firetruck_path_state_index = 0
 
 planning_start_time = 0
+total_planning_time = 0
 
 def initialize_firetruck_initial_state(firetruck, wumpus):
     global firetruck_initial_state
@@ -119,7 +120,7 @@ def firetruck_main(firetruck):
     global firetruck_explored_states
     global firetruck_path_state_index
     global goal_bush
-    global planning_start_time
+    global planning_start_time, total_planning_time
 
     while True:
         all_bushes_burned = True
@@ -130,6 +131,10 @@ def firetruck_main(firetruck):
             firetruck_path_state_index = 0
             firetruck_path_ready = False
             firetruck_ready_for_planning = False
+
+        if stop_playing:
+            print("PRM Planning time: ", total_planning_time)
+            break
 
         if not all_bushes_burned and not stop_playing:
             if not firetruck_ready_for_planning:
@@ -156,7 +161,7 @@ def firetruck_main(firetruck):
             else:
                 if firetruck_path_ready == 1:
                     planning_time = time.time() - planning_start_time
-                    print("PRM Planning time: ", planning_time)
+                    total_planning_time += planning_time
                     firetruck_path_ready = 2
                 # solution found
                 if firetruck_path_state_index < len(firetruck_path):
