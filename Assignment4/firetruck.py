@@ -13,7 +13,6 @@ firetruck_initial_state = None
 firetruck_goal_state = None
 goal_bush = None
 
-firetruck_explored_states = []
 firetruck_path = []
 firetruck_route = []
 firetruck_path_ready = False
@@ -72,9 +71,6 @@ def is_firetruck_path_ready():
 
 def get_firetruck_path():
     return firetruck_path
-
-def get_firetruck_explored_states():
-    return firetruck_explored_states
 
 def reconstruct_path(state_chained_list):
     path = []
@@ -184,16 +180,98 @@ def connect_node(vehicle, obstacles, new_node, k_neighbors, stop_if_exists):
     # print("loop finished")
     return 1
 
+def prm_get_neighbors(current_state, open_states, closed_states, goal_state):
+    neighbors = []
+    for combo in prm_connections:
+        new_state = None
+        neighbor_connection = None
+        if combo[0] == current_state:
+            new_state = combo[1]
+            neighbor_connection = combo[2]
+        elif combo[1] == current_state:
+            new_state = combo[0]
+            neighbor_connection = combo[2]
+        else:
+            continue
+
+        if new_state not in closed_states:
+            # Calculate the new costs
+            tentative_new_cost = current_state.cost + current_state.calculate_euclidean_distance(new_state)
+            heuristic_cost = new_state.calculate_heuristic_cost(new_state, goal_state)
+
+            # Update the state in the open list if it exists
+            try:
+                index = open_states.index(new_state)
+                previous_cost = open_states[index].cost
+                if tentative_new_cost < previous_cost:
+                    open_states[index] = new_state
+                    open_states[index].cost = tentative_new_cost
+                    open_states[index].total_cost = tentative_new_cost + heuristic_cost
+                    open_states[index].parent_state = current_state
+                    open_states[index].path_from_parent = neighbor_connection
+            except ValueError:
+                # return a new element in the neighbors list if this hadnt been discovered
+                new_state.parent_state = current_state
+                new_state.path_from_parent = neighbor_connection
+                new_state.cost = tentative_new_cost
+                new_state.total_cost = tentative_new_cost + heuristic_cost
+                neighbors.append(new_state)
+
+    return neighbors
+
+
 def prm_search(vehicle, obstacles, start_state, end_state):
     ret = connect_node(vehicle, obstacles, start_state, 1, True)
     if ret == -1:
         # Could not connect the initial state
-        return -1
+        return -1,[]
 
     ret = connect_node(vehicle, obstacles, end_state, 1, True)
     if ret == -1:
         # Could not connect the final state
-        return -1
+        return -1,[]
+
+    prm_search.open_states = [start_state]
+    prm_search.closed_states = []
+    prm_search.iterations = 0
+
+    # A*
+    while prm_search.open_states and prm_search.iterations < 10000:
+        # Search and remove the state with the lowest cost
+        current_state = prm_search.open_states[0]
+        state_index = 0
+        i = 0
+        for state in prm_search.open_states:
+            if state.total_cost < current_state.total_cost:
+                current_state = state
+                state_index = i
+            i += 1
+        del prm_search.open_states[state_index]
+
+        # Add the current state to the closed list
+        prm_search.closed_states.append(current_state)
+
+        if current_state.goal_check(end_state):
+
+            # path = reconstruct_path(prm_search.closed_states)
+            # path = []
+
+            print("success")
+            print("Finished reconstructing path")
+            print("Number of iterations: ", prm_search.iterations)
+            print("Number of waypoints: ", len(path))
+            print("Press any key to visualize the path")
+
+            exit_code = 1
+            return exit_code, path
+        else:
+            prm_search.iterations += 1
+            neighbors = prm_get_neighbors(current_state, prm_search.open_states, prm_search.closed_states, end_state)
+            prm_search.open_states += neighbors
+            # exit_code = 0
+            # return exit_code, []
+
+    return -1,[]
 
 
 def local_search(vehicle, obstacles, end_state):
@@ -241,7 +319,6 @@ def local_search(vehicle, obstacles, end_state):
 
 def firetruck_main(firetruck):
     global firetruck_path, firetruck_path_ready, firetruck_initial_state, firetruck_ready_for_planning
-    global firetruck_explored_states
     global firetruck_path_state_index
     global goal_bush
     global planning_start_time, total_planning_time
@@ -266,10 +343,6 @@ def firetruck_main(firetruck):
                 firetruck_initial_state = AckermannDriveState(firetruck.x, firetruck.y, radians(firetruck.orientation), 0, 0, 0)
                 initialize_firetruck_goal_state(firetruck)
 
-                local_search.open_states = [firetruck_initial_state]
-                local_search.closed_states = []
-                local_search.iterations = 0
-
                 firetruck_route = []
                 firetruck_path = []
 
@@ -279,7 +352,7 @@ def firetruck_main(firetruck):
                 planning_start_time = time.time()
             elif firetruck_path_ready == 0:
                 # Continue searching
-                firetruck_path_ready, firetruck_path, firetruck_explored_states = local_search(firetruck, environment.bushes, firetruck_goal_state)
+                firetruck_path_ready, firetruck_path = prm_search(firetruck, environment.bushes, firetruck_initial_state, firetruck_goal_state)
             elif firetruck_path_ready == -1:
                 # Solution not found
                 firetruck_path_state_index = 0

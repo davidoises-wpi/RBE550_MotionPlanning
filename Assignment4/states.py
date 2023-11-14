@@ -52,6 +52,7 @@ class AckermannDriveState(State):
         self.psi = psi
         self.dt = dt
         self.v = v
+        self.path_from_parent = []
 
     def get_steps(self, dt, psi_rad, v, current_angle):
         """ This function returns the steps after integrating the kinematic model over dt """

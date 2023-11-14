@@ -118,14 +118,14 @@ def main():
         firetruck_path = []
         if ft.is_firetruck_path_ready():
             firetruck_path = ft.get_firetruck_path()
-        firetruck_states = ft.get_firetruck_explored_states()
+        # firetruck_states = ft.get_firetruck_explored_states()
 
         wumpus_path = []
         if wp.is_wumpus_path_ready():
             wumpus_path = wp.get_wumpus_path()
         wumpus_states = wp.get_wumpus_explored_states()
 
-        render_all(screen, clock, [wumpus, firetruck], environment.bushes, wumpus_states, wumpus_path, firetruck_states, firetruck_path, round(elapsed_time_simulation))
+        render_all(screen, clock, [wumpus, firetruck], environment.bushes, wumpus_states, wumpus_path, [], firetruck_path, round(elapsed_time_simulation))
 
         if elapsed_time_simulation >= 3600.0:
             run = False
