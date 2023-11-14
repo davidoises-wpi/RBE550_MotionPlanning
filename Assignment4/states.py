@@ -41,7 +41,8 @@ class AckermannDriveState(State):
     MAX_V_M = 10
 
     # Steering angle = atan(wheelbase/(radius - length/2))
-    MAX_PSI_DEG = 15
+    # MAX_PSI_DEG = 15
+    MAX_PSI_DEG = 30
 
     WHEELBASE_M = 3
 
@@ -147,7 +148,7 @@ class AckermannDriveState(State):
         dist = self.calculate_euclidean_distance(other_state)
         angle_diff = degrees(abs(self.angle - other_state.angle)%(2*pi))
 
-        return dist < 15*environment.METERS_TO_PIXELS #and angle_diff < 5
+        return dist < 15*environment.METERS_TO_PIXELS# and angle_diff < 30
 
     def __str__(self):
         return f"x: {self.x} y: {self.y} angle: {degrees(self.angle)} psi: {degrees(self.psi)} v: {self.v} cost: {self.cost}"

@@ -11,6 +11,8 @@ import time
 
 FPS = 60
 
+# firetruck_path = []
+
 def render_all(window, clock, vehicles, bushes, wumpus_explored_states, wumpus_path, firetruck_explored_states, firetruck_path, time):
     window.fill(environment.WHITE)
 
@@ -115,9 +117,10 @@ def main():
 
         environment.update_environment(None, wumpus, elapsed_time_simulation)
 
-        firetruck_path = []
-        if ft.is_firetruck_path_ready():
-            firetruck_path = ft.get_firetruck_path()
+        firetruck_states = []
+        global firetruck_path
+        # if ft.is_firetruck_path_ready():
+        firetruck_path = ft.get_firetruck_path()
         # firetruck_states = ft.get_firetruck_explored_states()
 
         wumpus_path = []
@@ -125,7 +128,7 @@ def main():
             wumpus_path = wp.get_wumpus_path()
         wumpus_states = wp.get_wumpus_explored_states()
 
-        render_all(screen, clock, [wumpus, firetruck], environment.bushes, wumpus_states, wumpus_path, [], firetruck_path, round(elapsed_time_simulation))
+        render_all(screen, clock, [wumpus, firetruck], environment.bushes, wumpus_states, wumpus_path, firetruck_path, [], round(elapsed_time_simulation))
 
         if elapsed_time_simulation >= 3600.0:
             run = False

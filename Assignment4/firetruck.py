@@ -1,7 +1,7 @@
 import environment
 from states import AckermannDriveState
 import time
-from math import radians, sqrt, degrees
+from math import radians, sqrt, degrees, pi
 from random import random
 import copy
 
@@ -27,8 +27,8 @@ visualization_time_step = 0.02
 
 prm_nodes = []
 prm_connections = []
-prm_n = 500
-prm_k = 7
+prm_n = 5000
+prm_k = 4
 prm_state = 0
 prm_index = 0
 neighbor_index = 0
@@ -40,6 +40,8 @@ def initialize_firetruck_initial_state(firetruck, wumpus):
     posx = round(environment.SCREEN_WIDTH_PIXELS - wumpus.x)
     posy = round(environment.SCREEN_HEIGHT_PIXELS - wumpus.y)
 
+    # posx = 100
+    # posy = 50
     firetruck_initial_state = AckermannDriveState(posx, posy, 0, 0, 0, 0)
     firetruck.set_position(posx, posy)
 
@@ -64,6 +66,8 @@ def initialize_firetruck_goal_state(firetruck):
                 goal_bush = bush
 
     global firetruck_goal_state
+    # goal_x = 600
+    # goal_y = 600
     firetruck_goal_state = AckermannDriveState(goal_x, goal_y, 0, 0, 0, 0)
 
 def is_firetruck_path_ready():
@@ -81,6 +85,32 @@ def reconstruct_path(state_chained_list):
         index += 1
     path.reverse()
     return path
+
+def reconstruct_prm_path(state_chained_list, vehicle, obstacles):
+    links = []
+    links.append(state_chained_list.pop())
+    index = 0
+    while links[index].parent_state:
+        links.append(links[index].parent_state)
+        index += 1
+    links.reverse()
+
+    final_path = []
+    for link in links:
+        if link.path_from_parent:
+            section = link.path_from_parent
+
+            last_state_in_section = section[-1]
+            first_state_in_section = section[0]
+
+            distance_last_to_link = link.calculate_euclidean_distance(last_state_in_section)
+            distance_first_to_link = link.calculate_euclidean_distance(first_state_in_section)
+
+            if distance_first_to_link < distance_last_to_link:
+                section.reverse()
+            final_path = final_path + section
+
+    return final_path
 
 def build_map(vehicle, obstacles):
     global prm_nodes,prm_index, prm_state, neighbor_index, neighbors, prm_n
@@ -135,19 +165,22 @@ def connect_node(vehicle, obstacles, new_node, k_neighbors, stop_if_exists):
     neighbor_node = None
     neighbors = []
 
-    if new_node in prm_nodes and stop_if_exists:
-        # Already connected
-        return 1
+    if stop_if_exists:
+        if new_node in prm_nodes:
+            # Already connected
+            return 1
 
     while neighbor_index < k_neighbors:
         # Find k nearest neighbors
-        lowest_distance = 10000
+        best_match = 0
         for node in prm_nodes:
             if not node == new_node:
                 if node not in neighbors:
                     distance = node.calculate_euclidean_distance(new_node)
-                    if distance < lowest_distance:
-                        lowest_distance = distance
+                    angle_diff = degrees(abs(new_node.angle - node.angle)%(2*pi))
+                    metric = 1.0/(distance + angle_diff)
+                    if metric > best_match:
+                        best_match = metric
                         neighbor_node = node
         neighbors.append(neighbor_node)
 
@@ -167,8 +200,8 @@ def connect_node(vehicle, obstacles, new_node, k_neighbors, stop_if_exists):
             prm_connections.append((new_node, neighbor_node, path))
             neighbor_index += 1
 
-        if path_ready == -1:
-            print(distance, " ", len(neighbors), " ", neighbor_index)
+        # if path_ready == -1:
+            # print(distance, " ", len(neighbors), " ", neighbor_index)
 
         if len(neighbors) > 10 and neighbor_index == 0:
             # Couldnt connect it
@@ -253,14 +286,13 @@ def prm_search(vehicle, obstacles, start_state, end_state):
 
         if current_state.goal_check(end_state):
 
-            # path = reconstruct_path(prm_search.closed_states)
-            # path = []
+            path = reconstruct_prm_path(prm_search.closed_states, vehicle, obstacles)
 
-            print("success")
-            print("Finished reconstructing path")
-            print("Number of iterations: ", prm_search.iterations)
-            print("Number of waypoints: ", len(path))
-            print("Press any key to visualize the path")
+            # print("success")
+            # print("Finished reconstructing path")
+            # print("Number of iterations: ", prm_search.iterations)
+            # print("Number of waypoints: ", len(path))
+            # print("Press any key to visualize the path")
 
             exit_code = 1
             return exit_code, path
@@ -321,7 +353,7 @@ def firetruck_main(firetruck):
     global firetruck_path, firetruck_path_ready, firetruck_initial_state, firetruck_ready_for_planning
     global firetruck_path_state_index
     global goal_bush
-    global planning_start_time, total_planning_time
+    global planning_start_time, total_planning_time, firetruck_points
 
     while True:
         all_bushes_burned = True
@@ -362,30 +394,37 @@ def firetruck_main(firetruck):
                 if firetruck_path_ready == 1:
                     planning_time = time.time() - planning_start_time
                     total_planning_time += planning_time
+                    # print("success")
 
                     # create a smooth line between nodes base on steering angle and speed
                     firetruck_route = []
-                    for i in range(1, len(firetruck_path)):
-                        visualization_time_step = 0.02
-                        current_time = 0
+                    # for i in range(1, len(firetruck_path)):
+                    #     visualization_time_step = 0.02
+                    #     current_time = 0
 
-                        prev_state = firetruck_path[i-1]
-                        state = firetruck_path[i]
-                        while current_time < state.dt:
-                            current_time += visualization_time_step
-                            dangle, dx, dy = prev_state.get_steps(current_time, state.psi, state.v, prev_state.angle)
-                            x = prev_state.x + dx
-                            y = prev_state.y + dy
-                            angle = prev_state.angle + dangle
-                            firetruck_route.append((x,y,angle))
+                    #     prev_state = firetruck_path[i-1]
+                    #     state = firetruck_path[i]
+                    #     while current_time < state.dt:
+                    #         current_time += visualization_time_step
+                    #         dangle, dx, dy = prev_state.get_steps(current_time, state.psi, state.v, prev_state.angle)
+                    #         x = prev_state.x + dx
+                    #         y = prev_state.y + dy
+                    #         angle = prev_state.angle + dangle
+                    #         firetruck_route.append((x,y,angle))
 
                     firetruck_path_ready = 2
                 # solution found
-                if firetruck_path_state_index < len(firetruck_route):
-                    state = firetruck_route[firetruck_path_state_index]
-                    firetruck.set_position(state[0], state[1])
-                    firetruck.set_orientation(degrees(state[2]))
+                # if firetruck_path_state_index < len(firetruck_route):
+                if firetruck_path_state_index < len(firetruck_path):
+                    # state = firetruck_route[firetruck_path_state_index]
+                    # firetruck.set_position(state[0], state[1])
+                    # firetruck.set_orientation(degrees(state[2]))
+                    state = firetruck_path[firetruck_path_state_index]
+                    firetruck.set_position(state.x, state.y)
+                    firetruck.set_orientation(degrees(state.angle))
+                    # print(state)
 
+                    visualization_time_step = 0.2
                     real_time_millis = visualization_time_step/(environment.REAL_TO_SIMULATION_SECS_PER_MILLIS*1000)
                     time.sleep(real_time_millis)
 

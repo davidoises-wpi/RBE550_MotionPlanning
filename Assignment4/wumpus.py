@@ -171,7 +171,7 @@ def wumpus_main(wumpus):
                     # This defines the speed at which wumpus moves
                     # the grid for wumpus is 5 meters, so it is moving 5 meters ever 1.5 secs in simulation time
                     # speed = 5/1.5 = 3.3m/s
-                    simulation_time_between_steps = 2.5
+                    simulation_time_between_steps = 1.5
                     # simulation_time_between_steps = 0.1
                     real_time_millis = simulation_time_between_steps/(environment.REAL_TO_SIMULATION_SECS_PER_MILLIS*1000)
                     time.sleep(real_time_millis)
