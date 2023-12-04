@@ -15,14 +15,55 @@ WIDTH = 0.42;
 obstacles = {walls, secondary_shaft};
 colors = [[0.75 0 0];[0 0 0.75]];
 
-primary_shaft = create_shaft();
+[primary_shaft, shaft_base] = create_shaft();
+
+ss = stateSpaceSE3([-0.5, 1;
+                    -0.5, 0.5;
+                    0,2;
+                    inf, inf;
+                    inf, inf;
+                    inf, inf;
+                    inf, inf]);
+
+
+% pose = [roty(90) [0.185; 0; 0.522]; 0 0 0 1];
+
+collided = false;
+
+while ~collided
+    % Example on how to sample a random position
+    state = sampleUniform(ss,1);
+    rotm = quat2rotm(state(4:7));
+    newpose = [rotm [state(1); state(2); state(3)]; 0 0 0 1];
+    setFixedTransform(shaft_base,newpose);
+    replaceJoint(primary_shaft,"c1",shaft_base);
+    
+    % Just storeing but anyway there are no movable joints since this is not
+    % really a robot
+    default_config = homeConfiguration(primary_shaft);
+    
+    % Check for coliisions in the random position
+    % isCollidingWithWalls = checkCollision(primary_shaft, default_config, walls);
+    isCollidingWithWalls = false;
+    isCollidingWithSecondaryShaft = checkCollision(primary_shaft, default_config, secondary_shaft);
+
+    if any(isCollidingWithWalls) || any(isCollidingWithSecondaryShaft)
+        collided = true;
+    end
+end
+
+
+% example on how to apply any new position
+% pose = [roty(350) [0.185; 0; 0.522]; 0 0 0 1];
+% setFixedTransform(shaft_base,pose);
+% replaceJoint(primary_shaft,"c1",shaft_base);
 
 
 % Figure parameters
 figure
-xlim([0, LENGTH+THICKNESS])
-ylim([-WIDTH/2, WIDTH/2])
-zlim([0, 1])
+% xlim([-2, 2])
+% ylim([-2, 2])
+% zlim([-2, 2])
 xlabel("x axis")
 ylabel("y axis")
 zlabel("z axis")
@@ -43,7 +84,7 @@ function [walls, shaft] = create_obstacles()
 
 end
 
-function shaft = create_shaft()
+function [shaft, jntBase] = create_shaft()
     % Primary shaft is created as a robot (rigid body tree)
 
     % Initialize robot
@@ -145,7 +186,7 @@ function walls = create_walls()
              struct("width",WIDTH,"height",0.09,"origin",[THICKNESS/2; 0; 0.400 + 0.16 + 0.09/2]),
             };
     
-    walls = [];
+    walls = {};
     boxes_number = length(boxes);
     for i = 1:boxes_number
         box_properties = boxes{i};
@@ -154,7 +195,7 @@ function walls = create_walls()
         pose = [eye(3) box_properties.origin; 0 0 0 1];
         box.Pose = pose;
     
-        walls = [walls, box];
+        walls{i} = box;
     end
 end
 
@@ -172,7 +213,7 @@ function secondary_shaft = create_secondary_shaft()
                  struct("radius",0.280/2,"length",0.05,"origin",[THICKNESS/2 + 0.051 + 0.05 + 0.076 + 0.05 + 0.016 + 0.05 + 0.05 + 0.182 + 0.05/2;0;0.25]),
                  struct("radius",0.072/2,"length",0.033,"origin",[THICKNESS/2 + 0.051 + 0.05 + 0.076 + 0.05 + 0.016 + 0.05 + 0.05 + 0.182 + 0.05 + 0.033/2;0;0.25])};
     
-    secondary_shaft = [];
+    secondary_shaft = {};
     cylinders_number = length(cylinders);
     for i = 1:cylinders_number
         cylinder_properties = cylinders{i};
@@ -181,7 +222,8 @@ function secondary_shaft = create_secondary_shaft()
         pose = [roty(90) cylinder_properties.origin; 0 0 0 1];
         cylinder.Pose = pose;
     
-        secondary_shaft = [secondary_shaft, cylinder];
+        % secondary_shaft = [secondary_shaft, cylinder];
+        secondary_shaft{i} = cylinder;
     end
 end
 
@@ -198,7 +240,7 @@ function draw_obstacles(obstacles_array, colors_array)
         % disp("i:" + i)
         for j = 1:elements_number
             % disp("j:" + j)
-            element = obstacle(j);
+            element = obstacle{j};
             [~,patchObj] = show(element);
             patchObj.FaceColor = element_color;
             patchObj.EdgeColor = 'none';
