@@ -17,6 +17,10 @@ colors = [[0.75 0 0];[0 0 0.75]];
 
 [primary_shaft, shaft_base] = create_shaft();
 
+% Just storeing but anyway there are no movable joints since this is not
+% really a robot
+default_config = homeConfiguration(primary_shaft);
+
 ss = stateSpaceSE3([-0.5, 1;
                     -0.5, 0.5;
                     0,2;
@@ -25,38 +29,20 @@ ss = stateSpaceSE3([-0.5, 1;
                     inf, inf;
                     inf, inf]);
 
+sv = state_validator_6dof(ss);
+sv.walls = walls;
+sv.secondary_shaft = secondary_shaft;
+sv.robot = primary_shaft;
+sv.robot_base = shaft_base;
+sv.default_config = default_config;
 
-% pose = [roty(90) [0.185; 0; 0.522]; 0 0 0 1];
+% planner = plannerRRT(ss,sv,MaxConnectionDistance=0.02, GoalReachedFcn = @(~,s,g)(norm(s(1:3)-g(1:3))<0.2),MaxIterations=100);
+planner = plannerBiRRT(ss,sv,MaxConnectionDistance=0.05,MaxIterations=500);
 
-collided = false;
+start_state = [0.185 0 0.522 rotm2quat(roty(90))];
+goal_state = [0.185 0 0.9 rotm2quat(roty(90))];
 
-while ~collided
-    % Example on how to sample a random position
-    state = sampleUniform(ss,1);
-    rotm = quat2rotm(state(4:7));
-    newpose = [rotm [state(1); state(2); state(3)]; 0 0 0 1];
-    setFixedTransform(shaft_base,newpose);
-    replaceJoint(primary_shaft,"c1",shaft_base);
-    
-    % Just storeing but anyway there are no movable joints since this is not
-    % really a robot
-    default_config = homeConfiguration(primary_shaft);
-    
-    % Check for coliisions in the random position
-    % isCollidingWithWalls = checkCollision(primary_shaft, default_config, walls);
-    isCollidingWithWalls = false;
-    isCollidingWithSecondaryShaft = checkCollision(primary_shaft, default_config, secondary_shaft);
-
-    if any(isCollidingWithWalls) || any(isCollidingWithSecondaryShaft)
-        collided = true;
-    end
-end
-
-
-% example on how to apply any new position
-% pose = [roty(350) [0.185; 0; 0.522]; 0 0 0 1];
-% setFixedTransform(shaft_base,pose);
-% replaceJoint(primary_shaft,"c1",shaft_base);
+[pthObj,solnInfo] = plan(planner, start_state, goal_state);
 
 
 % Figure parameters
@@ -74,6 +60,12 @@ draw_obstacles(obstacles,colors);
 
 show(primary_shaft,"Collisions","on","Frames","off");
 showdetails(primary_shaft)
+
+solnInfo
+plot3(solnInfo.StartTreeData(:,1),solnInfo.StartTreeData(:,2), solnInfo.StartTreeData(:,3),'.-','color','b')
+plot3(solnInfo.GoalTreeData(:,1),solnInfo.GoalTreeData(:,2), solnInfo.GoalTreeData(:,3),'.-','color','g')
+
+% plot3(pthObj.States(:,1),pthObj.States(:,2), pthObj.States(:,3),'r-','LineWidth',2)
 
 %% Helper functions
 
