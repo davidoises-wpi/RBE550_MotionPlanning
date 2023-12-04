@@ -1,6 +1,6 @@
-close all
-clear
-clc
+% close all
+% clear
+% clc
 
 global THICKNESS LENGTH HEIGHT WIDTH
 THICKNESS = 0.025;
@@ -36,38 +36,70 @@ sv.robot = primary_shaft;
 sv.robot_base = shaft_base;
 sv.default_config = default_config;
 
-% planner = plannerRRT(ss,sv,MaxConnectionDistance=0.02, GoalReachedFcn = @(~,s,g)(norm(s(1:3)-g(1:3))<0.2),MaxIterations=100);
-planner = plannerBiRRT(ss,sv,MaxConnectionDistance=0.05,MaxIterations=500);
+planner = plannerBiRRT(ss,sv,MaxConnectionDistance=0.05,MaxIterations=700);
 
 start_state = [0.185 0 0.522 rotm2quat(roty(90))];
 goal_state = [0.185 0 0.9 rotm2quat(roty(90))];
 
-[pthObj,solnInfo] = plan(planner, start_state, goal_state);
-
-
-% Figure parameters
-figure
-% xlim([-2, 2])
-% ylim([-2, 2])
-% zlim([-2, 2])
-xlabel("x axis")
-ylabel("y axis")
-zlabel("z axis")
-hold on
-view([10 20.75])
-
-draw_obstacles(obstacles,colors);
-
-show(primary_shaft,"Collisions","on","Frames","off");
-showdetails(primary_shaft)
+% [pthObj,solnInfo] = plan(planner, start_state, goal_state);
 
 solnInfo
+
+% if solnInfo.IsPathFound
+    number_of_nodes_in_solution = size(pthObj.States, 1);
+    states_array = pthObj.States;
+% else
+%     number_of_nodes_in_solution = size(solnInfo.GoalTreeData,1);
+%     states_array = solnInfo.GoalTreeData;
+% end
+
+figure
+gif('path_solution.gif');
+
+
+
+for i=1:number_of_nodes_in_solution
+    state = states_array(i,:);
+
+    
+    display_pose(primary_shaft, state);
+    xlim([-0.3, 1])
+    ylim([-0.5, 0.5])
+    zlim([-0.3, 1.5])
+    xlabel("x axis")
+    ylabel("y axis")
+    zlabel("z axis")
+    view([10 20.75])
+    hold on;
+   
+    draw_obstacles(obstacles,colors);
+    
+    pause(0.10);
+    
+    drawnow;
+    gif
+    hold off
+end
+
+hold on;
 plot3(solnInfo.StartTreeData(:,1),solnInfo.StartTreeData(:,2), solnInfo.StartTreeData(:,3),'.-','color','b')
 plot3(solnInfo.GoalTreeData(:,1),solnInfo.GoalTreeData(:,2), solnInfo.GoalTreeData(:,3),'.-','color','g')
-
-% plot3(pthObj.States(:,1),pthObj.States(:,2), pthObj.States(:,3),'r-','LineWidth',2)
+plot3(pthObj.States(:,1),pthObj.States(:,2), pthObj.States(:,3),'r-','LineWidth',2)
 
 %% Helper functions
+
+function display_pose(robot, state)
+    if any(isnan(state))
+        return;
+    end
+    rotm = quat2rotm(state(4:7));
+    newpose = [rotm [state(1,1); state(1,2); state(1,3)]; 0 0 0 1];
+    temp_joint = rigidBodyJoint("base_joint","fixed");
+    setFixedTransform(temp_joint,newpose);
+    replaceJoint(robot,"c1",temp_joint);
+
+    show(robot,"Collisions","on","Frames","off");
+end
 
 function [walls, shaft] = create_obstacles()
 

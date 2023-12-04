@@ -121,33 +121,27 @@ classdef state_validator_6dof < nav.StateValidator & ...
                 else
                     state_sample = state(i,:);
                 end
-                
+
                 rotm = quat2rotm(state_sample(4:7));
                 newpose = [rotm [state_sample(1,1); state_sample(1,2); state_sample(1,3)]; 0 0 0 1];
-    
-                % Copy the robot so the changes only apply to a copy
-                % temp_robot = copy(obj.robot);
-    
-                % Also create a new joint so it doesnt modify the
-                % orginal
-                % temp_joint = copy(obj.robot_base);
+
                 temp_joint = rigidBodyJoint("base_joint","fixed");
-    
+
                 % Apply new pose to the copies
-                
+
                 setFixedTransform(temp_joint,newpose);
                 replaceJoint(obj.robot,"c1",temp_joint);
-    
+
                 % check for collisions
                 isCollidingWithWalls = checkCollision(obj.robot, obj.default_config, obj.walls, "SkippedSelfCollisions","parent");
                 isCollidingWithSecondaryShaft = checkCollision(obj.robot, obj.default_config, obj.secondary_shaft, "SkippedSelfCollisions","parent");
-    
+
                 if any(isCollidingWithWalls) || any(isCollidingWithSecondaryShaft)
                     results = [results; 0];
                 else
                     results = [results; 1];
                 end
-    
+
                 % Set back to original joint
                 replaceJoint(obj.robot,"c1",obj.robot_base);
 
@@ -180,7 +174,7 @@ classdef state_validator_6dof < nav.StateValidator & ...
             % Default behavior: Interpolate with some fixed interval
             % between state1 and state2 and validate the interpolated
             % points.
-            numInterpPoints = 6;
+            numInterpPoints = 4;
             interpStates = obj.StateSpace.interpolate(state1, state2, linspace(0,1,numInterpPoints));
             interpValid = obj.isStateValid(interpStates, true);
             firstInvalidIdx = find(~interpValid, 1);
